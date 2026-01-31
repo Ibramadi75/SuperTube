@@ -53,7 +53,7 @@ public static class DbSeeder
                 Uploader = "Rick Astley",
                 Duration = 212,
                 Filepath = "/youtube/Rick Astley - Never Gonna Give You Up [dQw4w9WgXcQ].mp4",
-                ThumbnailPath = "/youtube/Rick Astley - Never Gonna Give You Up [dQw4w9WgXcQ]-thumb.jpg",
+                ThumbnailPath = null, // Fake data - no actual file
                 Filesize = 45_000_000,
                 DownloadedAt = DateTime.UtcNow.AddDays(-5),
                 YoutubeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
@@ -77,7 +77,7 @@ public static class DbSeeder
                 Uploader = "officialpsy",
                 Duration = 253,
                 Filepath = "/youtube/officialpsy - PSY - GANGNAM STYLE [9bZkp7q19f0].mp4",
-                ThumbnailPath = "/youtube/officialpsy - PSY - GANGNAM STYLE [9bZkp7q19f0]-thumb.jpg",
+                ThumbnailPath = null, // Fake data - no actual file
                 Filesize = 85_000_000,
                 DownloadedAt = DateTime.UtcNow.AddDays(-1),
                 YoutubeUrl = "https://www.youtube.com/watch?v=9bZkp7q19f0"

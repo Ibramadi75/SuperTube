@@ -36,20 +36,22 @@ export function VideoCard({ video, onClick, onDelete }: VideoCardProps) {
         className="relative aspect-video bg-[var(--bg-tertiary)] cursor-pointer"
         onClick={onClick}
       >
-        {video.thumbnailPath ? (
+        {video.thumbnailPath && (
           <img
             src={getThumbnailUrl(video.id)}
             alt={video.title}
             className="w-full h-full object-cover"
             loading="lazy"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
-            <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          </div>
         )}
+        <div className={`w-full h-full flex items-center justify-center text-[var(--text-secondary)] absolute inset-0 ${video.thumbnailPath ? '-z-10' : ''}`}>
+          <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        </div>
 
         {/* Duration badge */}
         <div className="absolute bottom-2 right-2 bg-black/80 px-1.5 py-0.5 rounded text-xs text-white font-medium">
