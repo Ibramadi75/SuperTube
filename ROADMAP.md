@@ -1,7 +1,7 @@
 # SuperTube - Roadmap de Developpement
 
 > Derniere mise a jour : 2025-01-31
-> Status global : **Phase 1 - Backend + Frontend OK, Docker a tester**
+> Status global : **Phase 1 - COMPLETE ✅**
 
 ---
 
@@ -41,8 +41,8 @@
 
 ### 1.4 Docker - Configuration dev
 - [x] Ecrire `docker-compose.dev.yml` avec hot-reload
-- [ ] Tester que les 2 services demarrent ensemble
-- [ ] Verifier la communication frontend -> backend
+- [x] Tester que les 3 services demarrent ensemble
+- [x] Verifier la communication frontend -> backend
 
 ---
 
@@ -346,6 +346,6 @@ _Utilise cette section pour noter ou tu en es quand tu t'arretes :_
 
 **2025-01-31** : Documentation terminee. Stack choisie : .NET 8 + React. Pret a commencer Phase 1.
 
-**2025-01-31** : Phase 1 setup en cours. Backend .NET cree avec EF Core + SQLite. Frontend React cree avec Vite + Tailwind + React Router. Docker dev configure. **TESTE OK** : API sur :5000, Frontend sur :5173.
+**2025-01-31** : Phase 1 COMPLETE. Backend .NET + Frontend React + Docker dev tous fonctionnels. Pret pour Phase 2 (migrations BDD) et Phase 3 (API complete).
 
 ---
