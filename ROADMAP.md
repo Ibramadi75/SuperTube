@@ -1,7 +1,7 @@
 # SuperTube - Roadmap de Developpement
 
 > Derniere mise a jour : 2025-01-31
-> Status global : **Phase 1 - COMPLETE ✅**
+> Status global : **Phase 2 - COMPLETE ✅**
 
 ---
 
@@ -57,8 +57,8 @@
 ### 2.2 Configuration EF Core
 - [x] Configurer les index dans `OnModelCreating`
 - [x] Auto-creation BDD avec `EnsureCreated()` (pas de migrations pour ce projet simple)
-- [ ] Tester la creation de la BDD au demarrage
-- [ ] Verifier que le fichier `supertube.db` est bien cree
+- [x] Tester la creation de la BDD au demarrage
+- [x] Verifier que le fichier `supertube.db` est bien cree
 
 ### 2.3 Seed des donnees de test (dev only)
 - [x] Ajouter quelques videos fictives pour tester l'affichage
