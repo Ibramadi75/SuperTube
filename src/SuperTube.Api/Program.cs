@@ -28,7 +28,21 @@ builder.Services.AddHttpClient<IYtdlpService, YtdlpService>(client =>
 builder.Services.AddSingleton<DownloadBackgroundService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<DownloadBackgroundService>());
 
+// CORS for development
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
+
+// Enable CORS
+app.UseCors();
 
 // Global error handler
 app.Use(async (context, next) =>

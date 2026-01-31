@@ -53,7 +53,7 @@ public static class DbSeeder
                 Uploader = "Rick Astley",
                 Duration = 212,
                 Filepath = "/youtube/Rick Astley - Never Gonna Give You Up [dQw4w9WgXcQ].mp4",
-                ThumbnailPath = "/youtube/Rick Astley - Never Gonna Give You Up [dQw4w9WgXcQ].jpg",
+                ThumbnailPath = "/youtube/Rick Astley - Never Gonna Give You Up [dQw4w9WgXcQ]-thumb.jpg",
                 Filesize = 45_000_000,
                 DownloadedAt = DateTime.UtcNow.AddDays(-5),
                 YoutubeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
@@ -65,7 +65,7 @@ public static class DbSeeder
                 Uploader = "jawed",
                 Duration = 19,
                 Filepath = "/youtube/jawed - Me at the zoo [jNQXAC9IVRw].mp4",
-                ThumbnailPath = "/youtube/jawed - Me at the zoo [jNQXAC9IVRw].jpg",
+                ThumbnailPath = "/youtube/jawed - Me at the zoo [jNQXAC9IVRw]-thumb.jpg",
                 Filesize = 2_500_000,
                 DownloadedAt = DateTime.UtcNow.AddDays(-3),
                 YoutubeUrl = "https://www.youtube.com/watch?v=jNQXAC9IVRw"
@@ -77,7 +77,7 @@ public static class DbSeeder
                 Uploader = "officialpsy",
                 Duration = 253,
                 Filepath = "/youtube/officialpsy - PSY - GANGNAM STYLE [9bZkp7q19f0].mp4",
-                ThumbnailPath = "/youtube/officialpsy - PSY - GANGNAM STYLE [9bZkp7q19f0].jpg",
+                ThumbnailPath = "/youtube/officialpsy - PSY - GANGNAM STYLE [9bZkp7q19f0]-thumb.jpg",
                 Filesize = 85_000_000,
                 DownloadedAt = DateTime.UtcNow.AddDays(-1),
                 YoutubeUrl = "https://www.youtube.com/watch?v=9bZkp7q19f0"
