@@ -125,16 +125,30 @@ export const useStore = create<AppState>((set, get) => ({
 
       // Subscribe to progress
       const unsubscribe = api.subscribeToProgress(download.id, (data) => {
-        const update = data as Partial<Download>
+        const sseData = data as { status: string; progress: number; speed?: string; eta?: string; fragmentIndex?: number; fragmentCount?: number }
+
+        // Convert string status to number for store compatibility
+        const statusMap: Record<string, number> = {
+          pending: 0,
+          downloading: 1,
+          completed: 2,
+          failed: 3,
+        }
+
+        const update: Partial<Download> = {
+          ...sseData,
+          status: statusMap[sseData.status] ?? 1,
+        }
+
         get().updateDownload(download.id, update)
 
         // Check if completed
-        if (update.status === 2) {
+        if (sseData.status === 'completed') {
           unsubscribe()
           get().fetchVideos()
           get().fetchStats()
           get().addToast('Telechargement termine', 'success')
-        } else if (update.status === 3) {
+        } else if (sseData.status === 'failed') {
           unsubscribe()
           get().addToast('Telechargement echoue', 'error')
         }
