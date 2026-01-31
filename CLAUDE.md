@@ -114,3 +114,15 @@ Port 8080 (expose)
 - **Un seul conteneur** supertube (nginx + node dedans)
 - **Webhook optionnel** pour Raccourcis iPhone (port 9001)
 - **SponsorBlock "mark"** = chapitres dans le lecteur (pas de coupure)
+
+## Git Workflow
+
+- **Une branche par phase/feature** : `feature/phase-1-setup`, `feature/phase-2-database`, etc.
+- **Squash merge** : Toujours utiliser `--squash` pour merger sur main (1 commit = 1 feature)
+  ```bash
+  git checkout main
+  git merge --squash feature/ma-branche
+  git commit -m "feat: description de la feature"
+  git push origin main
+  ```
+- **Ne pas supprimer les branches** apres merge (historique)
