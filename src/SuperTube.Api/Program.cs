@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SuperTube.Api.Data;
+using SuperTube.Api.Endpoints;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -16,6 +17,28 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 var app = builder.Build();
 
+// Global error handler
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new
+        {
+            error = new
+            {
+                code = "INTERNAL_ERROR",
+                message = app.Environment.IsDevelopment() ? ex.Message : "An unexpected error occurred"
+            }
+        });
+    }
+});
+
 // Auto-migrate database and seed
 using (var scope = app.Services.CreateScope())
 {
@@ -27,10 +50,11 @@ using (var scope = app.Services.CreateScope())
 // Health check
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
-// Placeholder endpoints (will be implemented in Phase 3)
-app.MapGet("/api/videos", () => Results.Ok(new { data = Array.Empty<object>() }));
-app.MapGet("/api/downloads", () => Results.Ok(new { data = Array.Empty<object>() }));
-app.MapGet("/api/settings", () => Results.Ok(new { data = new { quality = "1080p" } }));
-app.MapGet("/api/stats", () => Results.Ok(new { data = new { totalVideos = 0, totalSize = 0 } }));
+// Map all endpoints
+app.MapVideoEndpoints();
+app.MapChannelEndpoints();
+app.MapDownloadEndpoints();
+app.MapSettingsEndpoints();
+app.MapStatsEndpoints();
 
 app.Run();

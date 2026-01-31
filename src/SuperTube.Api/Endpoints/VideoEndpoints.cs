@@ -1,0 +1,83 @@
+using Microsoft.EntityFrameworkCore;
+using SuperTube.Api.Data;
+
+namespace SuperTube.Api.Endpoints;
+
+public static class VideoEndpoints
+{
+    public static void MapVideoEndpoints(this WebApplication app)
+    {
+        var group = app.MapGroup("/api/videos");
+
+        // GET /api/videos - List all videos
+        group.MapGet("/", async (AppDbContext db, int? limit, int? offset) =>
+        {
+            var query = db.Videos.OrderByDescending(v => v.DownloadedAt).AsQueryable();
+
+            if (offset.HasValue)
+                query = query.Skip(offset.Value);
+
+            if (limit.HasValue)
+                query = query.Take(limit.Value);
+
+            var videos = await query.ToListAsync();
+            var total = await db.Videos.CountAsync();
+
+            return Results.Ok(new { data = videos, total });
+        });
+
+        // GET /api/videos/{id} - Get video by ID
+        group.MapGet("/{id}", async (string id, AppDbContext db) =>
+        {
+            var video = await db.Videos.FindAsync(id);
+            return video is not null
+                ? Results.Ok(new { data = video })
+                : Results.NotFound(new { error = new { code = "VIDEO_NOT_FOUND", message = $"Video '{id}' not found" } });
+        });
+
+        // DELETE /api/videos/{id} - Delete video
+        group.MapDelete("/{id}", async (string id, AppDbContext db) =>
+        {
+            var video = await db.Videos.FindAsync(id);
+            if (video is null)
+                return Results.NotFound(new { error = new { code = "VIDEO_NOT_FOUND", message = $"Video '{id}' not found" } });
+
+            // Delete files if they exist
+            if (File.Exists(video.Filepath))
+                File.Delete(video.Filepath);
+            if (video.ThumbnailPath is not null && File.Exists(video.ThumbnailPath))
+                File.Delete(video.ThumbnailPath);
+
+            db.Videos.Remove(video);
+            await db.SaveChangesAsync();
+
+            return Results.NoContent();
+        });
+
+        // GET /api/videos/{id}/stream - Stream video file
+        group.MapGet("/{id}/stream", async (string id, AppDbContext db) =>
+        {
+            var video = await db.Videos.FindAsync(id);
+            if (video is null)
+                return Results.NotFound(new { error = new { code = "VIDEO_NOT_FOUND", message = $"Video '{id}' not found" } });
+
+            if (!File.Exists(video.Filepath))
+                return Results.NotFound(new { error = new { code = "FILE_NOT_FOUND", message = "Video file not found on disk" } });
+
+            return Results.File(video.Filepath, "video/mp4", enableRangeProcessing: true);
+        });
+
+        // GET /api/videos/{id}/thumbnail - Get thumbnail
+        group.MapGet("/{id}/thumbnail", async (string id, AppDbContext db) =>
+        {
+            var video = await db.Videos.FindAsync(id);
+            if (video is null)
+                return Results.NotFound(new { error = new { code = "VIDEO_NOT_FOUND", message = $"Video '{id}' not found" } });
+
+            if (video.ThumbnailPath is null || !File.Exists(video.ThumbnailPath))
+                return Results.NotFound(new { error = new { code = "THUMBNAIL_NOT_FOUND", message = "Thumbnail not found" } });
+
+            return Results.File(video.ThumbnailPath, "image/jpeg");
+        });
+    }
+}

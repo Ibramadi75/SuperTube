@@ -1,7 +1,7 @@
 # SuperTube - Roadmap de Developpement
 
 > Derniere mise a jour : 2025-01-31
-> Status global : **Phase 2 - COMPLETE ✅**
+> Status global : **Phase 3 - COMPLETE ✅**
 
 ---
 
@@ -74,42 +74,42 @@
 - [x] Creer le dossier `DTOs/` pour les objets de transfert
 
 ### 3.2 Endpoint Videos (`/api/videos`)
-- [ ] `GET /api/videos` - Liste toutes les videos (avec pagination)
-- [ ] `GET /api/videos/{id}` - Detail d'une video
-- [ ] `DELETE /api/videos/{id}` - Supprime une video (fichier + BDD)
-- [ ] `GET /api/videos/{id}/stream` - Stream le fichier video
-- [ ] `GET /api/videos/{id}/thumbnail` - Retourne la miniature
-- [ ] Tester chaque endpoint avec curl ou Postman
+- [x] `GET /api/videos` - Liste toutes les videos (avec pagination)
+- [x] `GET /api/videos/{id}` - Detail d'une video
+- [x] `DELETE /api/videos/{id}` - Supprime une video (fichier + BDD)
+- [x] `GET /api/videos/{id}/stream` - Stream le fichier video
+- [x] `GET /api/videos/{id}/thumbnail` - Retourne la miniature
+- [x] Tester chaque endpoint avec curl ou Postman
 
 ### 3.3 Endpoint Channels (`/api/channels`)
-- [ ] `GET /api/channels` - Liste les chaines (groupe par uploader)
-- [ ] `GET /api/channels/{name}` - Videos d'une chaine
-- [ ] `DELETE /api/channels/{name}` - Supprime toutes les videos d'une chaine
-- [ ] Tester chaque endpoint
+- [x] `GET /api/channels` - Liste les chaines (groupe par uploader)
+- [x] `GET /api/channels/{name}` - Videos d'une chaine
+- [x] `DELETE /api/channels/{name}` - Supprime toutes les videos d'une chaine
+- [x] Tester chaque endpoint
 
 ### 3.4 Endpoint Downloads (`/api/downloads`)
-- [ ] `POST /api/downloads` - Lance un nouveau telechargement
-- [ ] `GET /api/downloads` - Liste les telechargements (en cours + historique)
-- [ ] `GET /api/downloads/{id}` - Detail d'un telechargement
-- [ ] `DELETE /api/downloads/{id}` - Annule un telechargement en cours
-- [ ] Tester chaque endpoint
+- [x] `POST /api/downloads` - Lance un nouveau telechargement
+- [x] `GET /api/downloads` - Liste les telechargements (en cours + historique)
+- [x] `GET /api/downloads/{id}` - Detail d'un telechargement
+- [x] `DELETE /api/downloads/{id}` - Annule un telechargement en cours
+- [x] Tester chaque endpoint
 
 ### 3.5 Endpoint Settings (`/api/settings`)
-- [ ] `GET /api/settings` - Retourne tous les parametres
-- [ ] `PUT /api/settings` - Met a jour les parametres
-- [ ] Definir les valeurs par defaut (qualite, format, SponsorBlock)
-- [ ] Tester chaque endpoint
+- [x] `GET /api/settings` - Retourne tous les parametres
+- [x] `PUT /api/settings` - Met a jour les parametres
+- [x] Definir les valeurs par defaut (qualite, format, SponsorBlock)
+- [x] Tester chaque endpoint
 
 ### 3.6 Endpoint Stats (`/api/stats`)
-- [ ] `GET /api/stats` - Stats globales (nb videos, taille totale)
-- [ ] `GET /api/stats/downloads` - Metriques des telechargements recents
-- [ ] `GET /api/storage` - Espace disque utilise/libre
-- [ ] Tester chaque endpoint
+- [x] `GET /api/stats` - Stats globales (nb videos, taille totale)
+- [x] `GET /api/stats/downloads` - Metriques des telechargements recents
+- [x] `GET /api/storage` - Espace disque utilise/libre
+- [x] Tester chaque endpoint
 
 ### 3.7 Gestion des erreurs
-- [ ] Creer un middleware pour les erreurs globales
-- [ ] Retourner le format d'erreur standard (`{ error: { code, message } }`)
-- [ ] Logger les erreurs dans la console
+- [x] Creer un middleware pour les erreurs globales
+- [x] Retourner le format d'erreur standard (`{ error: { code, message } }`)
+- [x] Logger les erreurs dans la console
 
 ---
 
