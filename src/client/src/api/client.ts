@@ -17,16 +17,21 @@ class ApiClient {
   }
 
   async post<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    const options: RequestInit = {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: body ? JSON.stringify(body) : undefined,
-    })
+    }
+    if (body !== undefined) {
+      options.headers = { 'Content-Type': 'application/json' }
+      options.body = JSON.stringify(body)
+    }
+    const response = await fetch(`${this.baseUrl}${path}`, options)
     if (!response.ok) {
-      const error = await response.json()
+      const text = await response.text()
+      const error = text ? JSON.parse(text) : { error: { message: 'Request failed' } }
       throw new Error(error.error?.message || 'Request failed')
     }
-    return response.json()
+    const text = await response.text()
+    return text ? JSON.parse(text) : ({} as T)
   }
 
   async put<T>(path: string, body: unknown): Promise<T> {
@@ -47,10 +52,12 @@ class ApiClient {
       method: 'DELETE',
     })
     if (!response.ok) {
-      const error = await response.json()
+      const text = await response.text()
+      const error = text ? JSON.parse(text) : { error: { message: 'Request failed' } }
       throw new Error(error.error?.message || 'Request failed')
     }
-    return response.json()
+    const text = await response.text()
+    return text ? JSON.parse(text) : ({} as T)
   }
 
   getStreamUrl(videoId: string): string {
