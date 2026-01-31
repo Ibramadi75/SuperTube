@@ -1,0 +1,192 @@
+import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { useStore } from '../store'
+import { DownloadForm, DownloadProgress, VideoCard, VideoPlayer } from '../components'
+
+export function Dashboard() {
+  const {
+    videos,
+    fetchVideos,
+    downloads,
+    fetchDownloads,
+    stats,
+    fetchStats,
+    storage,
+    fetchStorage,
+    selectedVideo,
+    setSelectedVideo,
+    deleteVideo,
+  } = useStore()
+
+  useEffect(() => {
+    fetchVideos()
+    fetchDownloads()
+    fetchStats()
+    fetchStorage()
+
+    // Poll downloads every 2 seconds
+    const interval = setInterval(fetchDownloads, 2000)
+    return () => clearInterval(interval)
+  }, [fetchVideos, fetchDownloads, fetchStats, fetchStorage])
+
+  const activeDownloads = downloads.filter((d) => d.status === 0 || d.status === 1)
+  const recentVideos = videos.slice(0, 6)
+
+  return (
+    <div className="p-6 space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <p className="text-[var(--text-secondary)] mt-1">
+          Telecharger et gerer vos videos YouTube
+        </p>
+      </div>
+
+      {/* Download Form */}
+      <div className="bg-[var(--bg-secondary)] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Nouveau telechargement</h2>
+        <DownloadForm />
+      </div>
+
+      {/* Stats */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard
+            label="Videos"
+            value={stats.totalVideos.toString()}
+            icon={
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Taille totale"
+            value={stats.formattedSize}
+            icon={
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Duree totale"
+            value={stats.formattedDuration}
+            icon={
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Chaines"
+            value={stats.channelCount.toString()}
+            icon={
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            }
+          />
+        </div>
+      )}
+
+      {/* Storage */}
+      {storage && storage.percentUsed > 0 && (
+        <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-[var(--text-secondary)]">Stockage</span>
+            <span className="text-sm text-white">
+              {storage.formattedUsed} / {storage.formattedTotal}
+            </span>
+          </div>
+          <div className="w-full h-2 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${
+                storage.percentUsed > 90 ? 'bg-red-500' : storage.percentUsed > 70 ? 'bg-amber-500' : 'bg-green-500'
+              }`}
+              style={{ width: `${storage.percentUsed}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Active Downloads */}
+      {activeDownloads.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-white mb-4">
+            Telechargements en cours ({activeDownloads.length})
+          </h2>
+          <div className="space-y-3">
+            {activeDownloads.map((download) => (
+              <DownloadProgress key={download.id} download={download} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Videos */}
+      {recentVideos.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white">Videos recentes</h2>
+            <Link
+              to="/library"
+              className="text-sm text-[var(--accent)] hover:underline"
+            >
+              Voir tout
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentVideos.map((video) => (
+              <VideoCard
+                key={video.id}
+                video={video}
+                onClick={() => setSelectedVideo(video)}
+                onDelete={() => {
+                  if (confirm(`Supprimer "${video.title}" ?`)) {
+                    deleteVideo(video.id)
+                  }
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {videos.length === 0 && activeDownloads.length === 0 && (
+        <div className="text-center py-12">
+          <svg className="w-16 h-16 mx-auto text-[var(--text-secondary)] mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+          </svg>
+          <h3 className="text-lg font-medium text-white mb-2">Aucune video</h3>
+          <p className="text-[var(--text-secondary)]">
+            Collez une URL YouTube ci-dessus pour commencer
+          </p>
+        </div>
+      )}
+
+      {/* Video Player Modal */}
+      <VideoPlayer
+        video={selectedVideo}
+        onClose={() => setSelectedVideo(null)}
+      />
+    </div>
+  )
+}
+
+function StatCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+  return (
+    <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-[var(--bg-tertiary)] rounded-lg text-[var(--accent)]">
+          {icon}
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-white">{value}</p>
+          <p className="text-sm text-[var(--text-secondary)]">{label}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
