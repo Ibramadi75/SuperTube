@@ -5,7 +5,7 @@
 ## 1. Contexte et Objectifs
 
 ### 1.1 Contexte
-Une infrastructure Docker existante permet de télécharger des vidéos YouTube via un webhook déclenché depuis un raccourci iPhone. Les vidéos sont stockées dans `/downloads/Manual/` et organisées par uploader.
+SuperTube est une application autonome permettant de télécharger et gérer des vidéos YouTube. Elle peut s'intégrer à une infrastructure existante (webhook, Jellyfin, etc.) ou fonctionner de manière indépendante. Les vidéos sont stockées à plat avec le format `Uploader - Titre [ID].mp4` dans un dossier configurable par l'utilisateur.
 
 ### 1.2 Objectif
 Créer une interface web ultra-légère permettant de :
@@ -91,9 +91,9 @@ CMD ["node", "dist/index.js"]
 ### 2.2 Structure des Conteneurs
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                      Docker Network                      │
+│                      Docker Network                     │
 ├─────────────┬─────────────┬─────────────┬───────────────┤
-│   supertube  │    ytdlp    │   webhook   │   jellyfin    │
+│   supertube │    ytdlp    │   webhook   │   jellyfin    │
 │   (nouveau) │  (existant) │  (existant) │   (existant)  │
 │    :8080    │             │    :9001    │     :8096     │
 └─────────────┴─────────────┴─────────────┴───────────────┘
@@ -102,9 +102,14 @@ CMD ["node", "dist/index.js"]
 ### 2.3 Volumes
 ```yaml
 volumes:
-  - ./supertube/data:/app/data          # Base SQLite + config
-  - ./youtube:/downloads               # Vidéos téléchargées
+  - ./supertube/data:/app/data    # Base SQLite + config
+  - ./youtube:/youtube            # Vidéos téléchargées (chemin imposé)
 ```
+
+Le chemin `/youtube` dans le conteneur est imposé. L'utilisateur monte le dossier de son choix côté hôte :
+- `./youtube:/youtube` (dossier local)
+- `/mnt/nas/videos:/youtube` (NAS)
+- `/media/youtube:/youtube` (disque externe)
 
 > **Note sécurité** : Pas de montage du Docker socket. La communication avec le conteneur yt-dlp se fait via une API HTTP interne (voir section 2.4).
 
@@ -129,7 +134,7 @@ ytdlp-api:
   ports:
     - "3001:3001"
   volumes:
-    - ./youtube:/downloads
+    - ./youtube:/youtube    # Même volume que le backend
   environment:
     - TZ=Europe/Paris
   restart: unless-stopped
@@ -332,22 +337,18 @@ sponsorblock:
 #### 3.4.5 Organisation des Fichiers
 ```yaml
 output:
-  download_path: "/downloads"  # Chemin configurable
   template: "%(uploader)s - %(title)s [%(id)s].%(ext)s"  # Tout à plat
   restrict_filenames: false   # Remplacer caractères spéciaux
   windows_filenames: true     # Compatibilité Windows
 ```
 
-**Interface Configuration du Dossier :**
+> **Note** : Le dossier de téléchargement `/youtube` est imposé dans le conteneur. L'utilisateur choisit le dossier réel côté hôte via le volume Docker (voir section 2.3).
+
+**Interface Stockage (lecture seule) :**
 ```
 ┌─────────────────────────────────────────┐
 │  Stockage                               │
 ├─────────────────────────────────────────┤
-│  Dossier de téléchargement :            │
-│  ┌─────────────────────────────────┐    │
-│  │ /downloads                      │ 📁 │
-│  └─────────────────────────────────┘    │
-│                                         │
 │  📊 Espace utilisé : 52.3 Go            │
 │  📁 Espace libre   : 1.8 To             │
 │  📈 Total          : 2.0 To             │
@@ -938,10 +939,9 @@ supertube-backend:
     - "3000:3000"
   volumes:
     - ./supertube/data:/app/data
-    - ./youtube:/downloads
+    - ./youtube:/youtube
   environment:
     - TZ=Europe/Paris
-    - DOWNLOADS_PATH=/downloads
     - YTDLP_API_URL=http://ytdlp-api:3001
   depends_on:
     - ytdlp-api
@@ -952,7 +952,7 @@ ytdlp-api:
   build: ./ytdlp-api
   container_name: ytdlp-api
   volumes:
-    - ./youtube:/downloads
+    - ./youtube:/youtube
   environment:
     - TZ=Europe/Paris
   restart: unless-stopped
@@ -967,7 +967,7 @@ supertube:
     - "8080:8080"
   volumes:
     - ./supertube/data:/app/data
-    - ./youtube:/downloads
+    - ./youtube:/youtube
   environment:
     - TZ=Europe/Paris
   depends_on:
@@ -978,7 +978,7 @@ ytdlp-api:
   build: ./ytdlp-api
   container_name: ytdlp-api
   volumes:
-    - ./youtube:/downloads
+    - ./youtube:/youtube
   environment:
     - TZ=Europe/Paris
   restart: unless-stopped
@@ -987,7 +987,6 @@ ytdlp-api:
 ### 9.2 Variables d'Environnement
 ```bash
 PORT=8080                    # Port d'écoute
-DOWNLOADS_PATH=/downloads    # Chemin des vidéos
 DATA_PATH=/app/data          # Chemin base de données
 YTDLP_API_URL=http://ytdlp-api:3001  # URL de l'API yt-dlp
 TZ=Europe/Paris              # Timezone
