@@ -1,7 +1,7 @@
 # SuperTube - Roadmap de Developpement
 
-> Derniere mise a jour : 2025-01-31
-> Status global : **Phase 3 - COMPLETE ✅**
+> Derniere mise a jour : 2026-01-31
+> Status global : **Phase 4 - EN COURS (File System Watcher restant)**
 
 ---
 
@@ -116,20 +116,20 @@
 ## Phase 4 : Integration yt-dlp
 
 ### 4.1 Communication avec ytdlp-api
-- [ ] Creer un service `YtdlpService` pour appeler l'API externe
-- [ ] Implementer l'appel POST pour lancer un telechargement
-- [ ] Implementer la lecture du flux SSE pour la progression
-- [ ] Gerer les erreurs de l'API yt-dlp
+- [x] Creer un service `YtdlpService` pour appeler l'API externe
+- [x] Implementer l'appel POST pour lancer un telechargement
+- [x] Implementer la lecture du flux SSE pour la progression
+- [x] Gerer les erreurs de l'API yt-dlp
 
 ### 4.2 Gestion de la progression
-- [ ] Mettre a jour le status du download en BDD pendant le telechargement
-- [ ] Calculer et stocker les metriques (vitesse, fragments)
-- [ ] Marquer comme "completed" ou "failed" a la fin
+- [x] Mettre a jour le status du download en BDD pendant le telechargement
+- [x] Calculer et stocker les metriques (vitesse, fragments)
+- [x] Marquer comme "completed" ou "failed" a la fin
 
 ### 4.3 Post-telechargement
-- [ ] Scanner le fichier telecharge pour extraire les metadonnees
-- [ ] Creer l'entree dans la table `videos`
-- [ ] Verifier que la miniature est bien presente
+- [x] Scanner le fichier telecharge pour extraire les metadonnees
+- [x] Creer l'entree dans la table `videos`
+- [x] Verifier que la miniature est bien presente
 
 ### 4.4 File System Watcher
 - [ ] Implementer un watcher sur le dossier `/youtube`
@@ -347,5 +347,13 @@ _Utilise cette section pour noter ou tu en es quand tu t'arretes :_
 **2025-01-31** : Documentation terminee. Stack choisie : .NET 8 + React. Pret a commencer Phase 1.
 
 **2025-01-31** : Phase 1 COMPLETE. Backend .NET + Frontend React + Docker dev tous fonctionnels. Pret pour Phase 2 (migrations BDD) et Phase 3 (API complete).
+
+**2026-01-31** : Phase 4 quasi COMPLETE. Integration yt-dlp fonctionnelle avec:
+- API wrapper Python/FastAPI pour yt-dlp
+- YtdlpService .NET pour communiquer avec l'API
+- DownloadBackgroundService pour traiter les telechargements
+- Progression temps reel via SSE
+- Creation automatique des entrees Video apres telechargement
+- Reste a faire: File System Watcher (4.4)
 
 ---

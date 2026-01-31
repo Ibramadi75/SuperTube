@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SuperTube.Api.Data;
+using SuperTube.Api.Services;
 
 namespace SuperTube.Api.Endpoints;
 
@@ -56,13 +57,13 @@ public static class DownloadEndpoints
             db.Downloads.Add(download);
             await db.SaveChangesAsync();
 
-            // TODO: Actually trigger the download via yt-dlp API (Phase 4)
+            // Download will be picked up by DownloadBackgroundService
 
             return Results.Created($"/api/downloads/{download.Id}", new { data = download });
         });
 
         // DELETE /api/downloads/{id} - Cancel a download
-        group.MapDelete("/{id}", async (string id, AppDbContext db) =>
+        group.MapDelete("/{id}", async (string id, AppDbContext db, DownloadBackgroundService backgroundService, IYtdlpService ytdlpService) =>
         {
             var download = await db.Downloads.FindAsync(id);
             if (download is null)
@@ -71,7 +72,21 @@ public static class DownloadEndpoints
             if (download.Status == DownloadStatus.Completed)
                 return Results.BadRequest(new { error = new { code = "ALREADY_COMPLETED", message = "Cannot cancel a completed download" } });
 
-            // TODO: Actually cancel the download via yt-dlp API (Phase 4)
+            // Cancel via background service
+            backgroundService.CancelDownload(id);
+
+            // Also cancel on ytdlp-api if we have an ID
+            if (!string.IsNullOrEmpty(download.YtdlpId))
+            {
+                try
+                {
+                    await ytdlpService.CancelDownloadAsync(download.YtdlpId);
+                }
+                catch
+                {
+                    // Ignore errors - download may already be cancelled
+                }
+            }
 
             download.Status = DownloadStatus.Failed;
             download.Error = "Cancelled by user";
@@ -79,6 +94,66 @@ public static class DownloadEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(new { data = download });
+        });
+
+        // GET /api/downloads/{id}/progress - SSE stream for real-time progress
+        group.MapGet("/{id}/progress", async (string id, AppDbContext db, HttpContext httpContext, CancellationToken ct) =>
+        {
+            var download = await db.Downloads.FindAsync(id);
+            if (download is null)
+                return Results.NotFound(new { error = new { code = "DOWNLOAD_NOT_FOUND", message = $"Download '{id}' not found" } });
+
+            httpContext.Response.Headers["Content-Type"] = "text/event-stream";
+            httpContext.Response.Headers["Cache-Control"] = "no-cache";
+            httpContext.Response.Headers["Connection"] = "keep-alive";
+
+            var lastProgress = -1;
+            var lastStatus = "";
+
+            while (!ct.IsCancellationRequested)
+            {
+                // Refresh from database
+                await db.Entry(download).ReloadAsync(ct);
+
+                // Only send if changed
+                if (download.Progress != lastProgress || download.Status.ToString() != lastStatus)
+                {
+                    lastProgress = download.Progress;
+                    lastStatus = download.Status.ToString();
+
+                    var data = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        id = download.Id,
+                        status = download.Status.ToString().ToLowerInvariant(),
+                        progress = download.Progress,
+                        speed = download.Speed,
+                        eta = download.Eta,
+                        fragmentIndex = download.FragmentIndex,
+                        fragmentCount = download.FragmentCount,
+                    });
+
+                    await httpContext.Response.WriteAsync($"event: progress\ndata: {data}\n\n", ct);
+                    await httpContext.Response.Body.FlushAsync(ct);
+                }
+
+                // Stop if download finished
+                if (download.Status is DownloadStatus.Completed or DownloadStatus.Failed)
+                {
+                    var finalData = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        id = download.Id,
+                        status = download.Status.ToString().ToLowerInvariant(),
+                        progress = download.Progress,
+                        error = download.Error,
+                    });
+                    await httpContext.Response.WriteAsync($"event: complete\ndata: {finalData}\n\n", ct);
+                    break;
+                }
+
+                await Task.Delay(500, ct);
+            }
+
+            return Results.Empty;
         });
     }
 

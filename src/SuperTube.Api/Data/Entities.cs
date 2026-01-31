@@ -25,12 +25,19 @@ public class Download
     public DateTime StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
 
+    // yt-dlp API reference
+    public string? YtdlpId { get; set; }
+
+    // Real-time progress
+    public string? Speed { get; set; }
+    public string? Eta { get; set; }
+    public int FragmentIndex { get; set; }
+    public int FragmentCount { get; set; }
+
     // Metrics
     public long? FilesizeBytes { get; set; }
     public int? DurationSeconds { get; set; }
     public long? AvgSpeedBytes { get; set; }
-    public int? FragmentsTotal { get; set; }
-    public int? FragmentsDownloaded { get; set; }
     public string? Quality { get; set; }
     public int? ConcurrentFragments { get; set; }
 }

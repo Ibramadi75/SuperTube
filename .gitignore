@@ -14,6 +14,13 @@ node_modules/
 dist/
 *.local
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+
 # IDE
 .idea/
 .vscode/
@@ -34,6 +41,9 @@ npm-debug.log*
 *.db-shm
 *.db-wal
 /data/
+
+# Downloaded videos
+/youtube/
 
 # Environment
 .env
