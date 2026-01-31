@@ -56,13 +56,13 @@
 
 ### 2.2 Configuration EF Core
 - [x] Configurer les index dans `OnModelCreating`
-- [ ] Ajouter la migration initiale (`dotnet ef migrations add Initial`)
+- [x] Auto-creation BDD avec `EnsureCreated()` (pas de migrations pour ce projet simple)
 - [ ] Tester la creation de la BDD au demarrage
-- [ ] Verifier que le fichier `supertube.db` est bien cree dans `/app/data`
+- [ ] Verifier que le fichier `supertube.db` est bien cree
 
 ### 2.3 Seed des donnees de test (dev only)
-- [ ] Ajouter quelques videos fictives pour tester l'affichage
-- [ ] Ajouter des settings par defaut (qualite 1080p, etc.)
+- [x] Ajouter quelques videos fictives pour tester l'affichage
+- [x] Ajouter des settings par defaut (qualite 1080p, etc.)
 
 ---
 
