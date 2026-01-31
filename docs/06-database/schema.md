@@ -1,65 +1,139 @@
 # Schema SQLite
 
-## Tables
+## Entites EF Core
 
-### Table videos
+### Video
 
-Cache des metadonnees des videos.
+```csharp
+public class Video
+{
+    public string Id { get; set; } = null!;          // ID YouTube
+    public string Title { get; set; } = null!;
+    public string Uploader { get; set; } = null!;
+    public int? Duration { get; set; }               // Secondes
+    public string Filepath { get; set; } = null!;
+    public string? ThumbnailPath { get; set; }
+    public long? Filesize { get; set; }              // Bytes
+    public DateTime DownloadedAt { get; set; }
+    public string? YoutubeUrl { get; set; }
+}
+```
+
+### Download
+
+```csharp
+public class Download
+{
+    public string Id { get; set; } = null!;
+    public string Url { get; set; } = null!;
+    public DownloadStatus Status { get; set; }       // Enum
+    public int Progress { get; set; }                // 0-100
+    public string? Title { get; set; }
+    public string? Uploader { get; set; }
+    public string? Error { get; set; }
+    public DateTime StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+
+    // Metriques
+    public long? FilesizeBytes { get; set; }
+    public int? DurationSeconds { get; set; }
+    public long? AvgSpeedBytes { get; set; }
+    public int? FragmentsTotal { get; set; }
+    public int? FragmentsDownloaded { get; set; }
+    public string? Quality { get; set; }
+    public int? ConcurrentFragments { get; set; }
+}
+
+public enum DownloadStatus
+{
+    Pending,
+    Downloading,
+    Completed,
+    Failed
+}
+```
+
+### Setting
+
+```csharp
+public class Setting
+{
+    public string Key { get; set; } = null!;
+    public string Value { get; set; } = null!;
+}
+```
+
+## DbContext
+
+```csharp
+public class AppDbContext : DbContext
+{
+    public DbSet<Video> Videos => Set<Video>();
+    public DbSet<Download> Downloads => Set<Download>();
+    public DbSet<Setting> Settings => Set<Setting>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Video>(e =>
+        {
+            e.HasKey(v => v.Id);
+            e.HasIndex(v => v.Uploader);
+            e.HasIndex(v => v.DownloadedAt).IsDescending();
+        });
+
+        modelBuilder.Entity<Download>(e =>
+        {
+            e.HasKey(d => d.Id);
+            e.HasIndex(d => d.Status);
+        });
+
+        modelBuilder.Entity<Setting>()
+            .HasKey(s => s.Key);
+    }
+}
+```
+
+## SQL Genere
+
+Pour reference, voici le schema SQL equivalent :
 
 ```sql
 CREATE TABLE videos (
-    id TEXT PRIMARY KEY,           -- ID YouTube
+    id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     uploader TEXT NOT NULL,
-    duration INTEGER,              -- Duree en secondes
+    duration INTEGER,
     filepath TEXT NOT NULL,
     thumbnail_path TEXT,
-    filesize INTEGER,              -- Taille en bytes
-    downloaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    filesize INTEGER,
+    downloaded_at TEXT NOT NULL,
     youtube_url TEXT
 );
-```
 
-### Table downloads
-
-Historique et telechargements en cours.
-
-```sql
 CREATE TABLE downloads (
     id TEXT PRIMARY KEY,
     url TEXT NOT NULL,
-    status TEXT DEFAULT 'pending', -- pending, downloading, completed, failed
-    progress INTEGER DEFAULT 0,    -- 0-100
+    status INTEGER NOT NULL,
+    progress INTEGER NOT NULL,
     title TEXT,
     uploader TEXT,
     error TEXT,
-    started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    completed_at DATETIME,
-    -- Metriques de performance
-    filesize_bytes INTEGER,        -- Taille finale du fichier
-    duration_seconds INTEGER,      -- Duree du telechargement
-    avg_speed_bytes INTEGER,       -- Vitesse moyenne (bytes/sec)
-    fragments_total INTEGER,       -- Nombre total de fragments
-    fragments_downloaded INTEGER,  -- Fragments telecharges
-    quality TEXT,                  -- Qualite telechargee (1080p, 720p, etc.)
-    concurrent_fragments INTEGER   -- Parametre utilise
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    filesize_bytes INTEGER,
+    duration_seconds INTEGER,
+    avg_speed_bytes INTEGER,
+    fragments_total INTEGER,
+    fragments_downloaded INTEGER,
+    quality TEXT,
+    concurrent_fragments INTEGER
 );
-```
 
-### Table settings
-
-Parametres de l'application.
-
-```sql
 CREATE TABLE settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
-```
 
-## Index
-
-```sql
 CREATE INDEX idx_videos_uploader ON videos(uploader);
 CREATE INDEX idx_videos_downloaded_at ON videos(downloaded_at DESC);
 CREATE INDEX idx_downloads_status ON downloads(status);

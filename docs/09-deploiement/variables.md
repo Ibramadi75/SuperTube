@@ -6,8 +6,8 @@
 |----------|-------------|--------|--------|
 | `TZ` | Timezone | `UTC` | Non |
 | `YTDLP_API_URL` | URL interne de l'API yt-dlp | `http://ytdlp-api:3001` | Oui |
-| `NODE_ENV` | Environnement Node.js | `production` | Non |
-| `LOG_LEVEL` | Niveau de log (debug, info, warn, error) | `info` | Non |
+| `ASPNETCORE_URLS` | URL d'ecoute .NET | `http://+:5000` | Non |
+| `ASPNETCORE_ENVIRONMENT` | Environnement | `Production` | Non |
 
 ## Conteneur ytdlp-api
 
@@ -23,7 +23,7 @@ services:
     environment:
       - TZ=Europe/Paris
       - YTDLP_API_URL=http://ytdlp-api:3001
-      - LOG_LEVEL=info
+      - ASPNETCORE_ENVIRONMENT=Production
 
   ytdlp-api:
     environment:
@@ -33,8 +33,9 @@ services:
 ## Notes
 
 - Le port externe (8080) est configure dans `ports:` du docker-compose, pas via variable
+- .NET ecoute sur le port 5000 par defaut (interne, nginx proxy)
 - Le chemin des videos (`/youtube`) est fixe, configure via volume
-- Le chemin de la BDD (`/app/data`) est fixe, configure via volume
+- Le chemin de la BDD (`/app/data/supertube.db`) est fixe, configure via volume
 
 ---
 

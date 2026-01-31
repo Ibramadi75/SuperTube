@@ -34,7 +34,7 @@ services:
 **Architecture interne du conteneur `supertube` :**
 - Nginx sur le port 80 (expose en 8080)
 - Sert les fichiers statiques React
-- Proxy `/api/*` vers Node.js (port 3000 interne)
+- Proxy `/api/*` vers .NET API (port 5000 interne)
 
 ## Avec Webhook (optionnel)
 

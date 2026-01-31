@@ -76,7 +76,7 @@ docs/
 ## Conventions du Projet
 
 - **Frontend** : React 18 + Vite + Tailwind CSS + Zustand
-- **Backend** : Node.js (Express) + SQLite
+- **Backend** : .NET 8 Minimal API + EF Core + SQLite
 - **Conteneurs** : Docker multi-stage, image < 100 Mo
 - **Volume videos** : `/youtube` (chemin impose dans le conteneur)
 - **Communication yt-dlp** : API HTTP (pas de Docker socket)
@@ -98,13 +98,13 @@ Port 8080 (expose)
 ┌─────────────────────┐
 │  nginx (port 80)    │
 │  ├─ /*     → static │
-│  └─ /api/* → :3000  │
+│  └─ /api/* → :5000  │
 └─────────────────────┘
            │
            ▼
 ┌─────────────────────┐
-│  node (port 3000)   │──────► ytdlp-api (port 3001)
-│  API REST           │        interne
+│  .NET API (port 5000)│──────► ytdlp-api (port 3001)
+│  Minimal API         │        interne
 └─────────────────────┘
 ```
 
