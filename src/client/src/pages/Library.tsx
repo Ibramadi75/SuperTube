@@ -16,6 +16,7 @@ export function Library() {
     setSelectedVideo,
     deleteVideo,
     deleteChannel,
+    refreshVideo,
     selectedVideoIds,
     toggleVideoSelection,
     selectAllVideos,
@@ -255,6 +256,7 @@ export function Library() {
                     deleteVideo(video.id)
                   }
                 }}
+                onRefresh={() => refreshVideo(video.id)}
                 onSelect={() => toggleVideoSelection(video.id)}
                 isSelected={selectedVideoIds.has(video.id)}
                 selectionMode={selectionMode}

@@ -6,12 +6,13 @@ interface VideoCardProps {
   video: Video
   onClick: () => void
   onDelete?: () => void
+  onRefresh?: () => void
   onSelect?: () => void
   isSelected?: boolean
   selectionMode?: boolean
 }
 
-export function VideoCard({ video, onClick, onDelete, onSelect, isSelected, selectionMode }: VideoCardProps) {
+export function VideoCard({ video, onClick, onDelete, onRefresh, onSelect, isSelected, selectionMode }: VideoCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -76,6 +77,36 @@ export function VideoCard({ video, onClick, onDelete, onSelect, isSelected, sele
           </button>
           {menuOpen && (
             <div className="absolute right-0 mt-1 bg-[var(--bg-tertiary)] border border-[var(--bg-secondary)] rounded-lg shadow-lg py-1 min-w-[140px]">
+              {onRefresh && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setMenuOpen(false)
+                    onRefresh()
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-[var(--bg-secondary)] flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Rafraichir
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setMenuOpen(false)
+                    onDelete()
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-[var(--bg-secondary)] flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Supprimer
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation()
