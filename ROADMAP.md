@@ -69,9 +69,9 @@
 ## Phase 3 : API Backend
 
 ### 3.1 Structure des endpoints
-- [ ] Creer le dossier `Endpoints/` avec une classe par ressource
-- [ ] Creer le dossier `Services/` pour la logique metier
-- [ ] Creer le dossier `DTOs/` pour les objets de transfert
+- [x] Creer le dossier `Endpoints/` avec une classe par ressource
+- [x] Creer le dossier `Services/` pour la logique metier
+- [x] Creer le dossier `DTOs/` pour les objets de transfert
 
 ### 3.2 Endpoint Videos (`/api/videos`)
 - [ ] `GET /api/videos` - Liste toutes les videos (avec pagination)
