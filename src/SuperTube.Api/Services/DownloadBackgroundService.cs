@@ -138,10 +138,13 @@ public class DownloadBackgroundService : BackgroundService
                 download.CompletedAt = DateTime.UtcNow;
                 download.DurationSeconds = (int)(DateTime.UtcNow - startTime).TotalSeconds;
 
+                // Get video info for duration
+                var videoInfo = await _ytdlpService.GetVideoInfoAsync(download.Url);
+
                 // Create video entry
                 if (finalStatus.Result != null)
                 {
-                    await CreateVideoEntryAsync(db, finalStatus.Result, cts.Token);
+                    await CreateVideoEntryAsync(db, finalStatus.Result, videoInfo?.Duration, cts.Token);
                 }
             }
             else
@@ -188,7 +191,7 @@ public class DownloadBackgroundService : BackgroundService
         }
     }
 
-    private async Task CreateVideoEntryAsync(AppDbContext db, YtdlpDownloadResult result, CancellationToken ct)
+    private async Task CreateVideoEntryAsync(AppDbContext db, YtdlpDownloadResult result, int? duration, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(result.VideoId) || string.IsNullOrEmpty(result.Filepath))
             return;
@@ -208,6 +211,7 @@ public class DownloadBackgroundService : BackgroundService
             Id = result.VideoId,
             Title = result.Title ?? "Unknown",
             Uploader = result.Uploader ?? "Unknown",
+            Duration = duration,
             Filepath = filepath,
             ThumbnailPath = File.Exists(thumbnailPath) ? thumbnailPath : null,
             Filesize = fileInfo.Exists ? fileInfo.Length : null,
@@ -217,7 +221,7 @@ public class DownloadBackgroundService : BackgroundService
         db.Videos.Add(video);
         await db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Created video entry for {VideoId}: {Title}", video.Id, video.Title);
+        _logger.LogInformation("Created video entry for {VideoId}: {Title} ({Duration}s)", video.Id, video.Title, duration);
     }
 
     private static long? ParseSpeedToBytes(string speed)
