@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+src/client/node_modules/
+src/client/dist/
+
+# .NET
+src/SuperTube.Api/bin/
+src/SuperTube.Api/obj/
+
+# Data
+data/
+youtube/
+
+# Misc
+.DS_Store
+*.log

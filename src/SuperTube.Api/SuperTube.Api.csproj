@@ -4,11 +4,6 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
-
-  <!-- AOT only for Release publish -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 

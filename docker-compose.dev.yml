@@ -27,6 +27,7 @@ services:
       - "5173:5173"
     volumes:
       - ./src/client:/app
+      - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:5000
 
