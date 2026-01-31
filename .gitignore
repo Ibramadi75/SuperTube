@@ -29,11 +29,11 @@ logs/
 *.log
 npm-debug.log*
 
-# Data (dev)
+# Data (dev) - only root data folder
 *.db
 *.db-shm
 *.db-wal
-data/
+/data/
 
 # Environment
 .env
