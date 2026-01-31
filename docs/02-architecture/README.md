@@ -11,14 +11,16 @@ Vue d'ensemble de l'architecture technique de SuperTube.
 ## Schema Global
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      Docker Network                      │
-├─────────────┬─────────────┬─────────────┬───────────────┤
-│   supertube │   ytdlp-api │   webhook   │   jellyfin    │
-│   (nouveau) │  (sidecar)  │  (existant) │   (existant)  │
-│    :8080    │    :3001    │    :9001    │     :8096     │
-└─────────────┴─────────────┴─────────────┴───────────────┘
+┌────────────────────────────────────────────┐
+│              Docker Network                │
+├─────────────┬─────────────┬────────────────┤
+│   supertube │   ytdlp-api │    webhook     │
+│   (app)     │  (sidecar)  │  (optionnel)   │
+│    :8080    │    :3001    │     :9001      │
+└─────────────┴─────────────┴────────────────┘
 ```
+
+> **Note** : Le webhook est optionnel. Il permet l'integration avec les Raccourcis iPhone pour declencher des telechargements a distance.
 
 ---
 

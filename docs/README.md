@@ -50,4 +50,4 @@ open http://localhost:8080
 - **Legerete** : Empreinte memoire < 50 Mo
 - **Rapidite** : Temps de chargement < 1 seconde
 - **Simplicite** : Interface minimaliste, mobile-first
-- **Independance** : Fonctionne sans Pinchflat
+- **Independance** : Application standalone
