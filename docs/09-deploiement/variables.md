@@ -1,22 +1,40 @@
 # Variables d'Environnement
 
-## Configuration
+## Conteneur supertube
 
-| Variable | Description | Defaut |
-|----------|-------------|--------|
-| `PORT` | Port d'ecoute | `8080` |
-| `DATA_PATH` | Chemin base de donnees | `/app/data` |
-| `YTDLP_API_URL` | URL de l'API yt-dlp | `http://ytdlp-api:3001` |
-| `TZ` | Timezone | `Europe/Paris` |
+| Variable | Description | Defaut | Requis |
+|----------|-------------|--------|--------|
+| `TZ` | Timezone | `UTC` | Non |
+| `YTDLP_API_URL` | URL interne de l'API yt-dlp | `http://ytdlp-api:3001` | Oui |
+| `NODE_ENV` | Environnement Node.js | `production` | Non |
+| `LOG_LEVEL` | Niveau de log (debug, info, warn, error) | `info` | Non |
 
-## Exemple
+## Conteneur ytdlp-api
 
-```bash
-PORT=8080
-DATA_PATH=/app/data
-YTDLP_API_URL=http://ytdlp-api:3001
-TZ=Europe/Paris
+| Variable | Description | Defaut | Requis |
+|----------|-------------|--------|--------|
+| `TZ` | Timezone | `UTC` | Non |
+
+## Exemple docker-compose.yml
+
+```yaml
+services:
+  supertube:
+    environment:
+      - TZ=Europe/Paris
+      - YTDLP_API_URL=http://ytdlp-api:3001
+      - LOG_LEVEL=info
+
+  ytdlp-api:
+    environment:
+      - TZ=Europe/Paris
 ```
+
+## Notes
+
+- Le port externe (8080) est configure dans `ports:` du docker-compose, pas via variable
+- Le chemin des videos (`/youtube`) est fixe, configure via volume
+- Le chemin de la BDD (`/app/data`) est fixe, configure via volume
 
 ---
 

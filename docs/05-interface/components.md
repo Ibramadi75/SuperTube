@@ -3,7 +3,7 @@
 ## Arborescence des Composants
 
 ```
-src/
+src/client/
 ├── components/
 │   ├── layout/
 │   │   ├── Header.tsx           # Barre de navigation

@@ -13,8 +13,38 @@ Documentation de l'API REST de SuperTube.
 ## Base URL
 
 ```
-http://localhost:3000/api
+http://localhost:8080/api
 ```
+
+> L'API est accessible via le meme port que l'interface web. Nginx proxy les requetes `/api/*` vers le backend Node.js.
+
+## Format des Reponses
+
+**Succes :**
+```json
+{
+  "data": { ... }
+}
+```
+
+**Erreur :**
+```json
+{
+  "error": {
+    "code": "VIDEO_NOT_FOUND",
+    "message": "Video with id 'xxx' not found"
+  }
+}
+```
+
+**Codes HTTP :**
+| Code | Description |
+|------|-------------|
+| 200 | Succes |
+| 201 | Cree |
+| 400 | Requete invalide |
+| 404 | Ressource non trouvee |
+| 500 | Erreur serveur |
 
 ## Resume des Endpoints
 

@@ -1,117 +1,59 @@
 # Parametres
 
+Configuration de l'application via l'interface Settings.
+
 ## Qualite par Defaut
 
-```yaml
-quality:
-  default: "1080p"
-  options:
-    - "2160p"  # 4K
-    - "1080p"  # Full HD
-    - "720p"   # HD
-    - "480p"   # SD
-    - "audio"  # Audio uniquement (MP3)
-```
+| Option | Description |
+|--------|-------------|
+| 2160p | 4K (si disponible) |
+| **1080p** | Full HD (defaut) |
+| 720p | HD |
+| 480p | SD |
+| audio | MP3 uniquement |
 
 ## Format de Sortie
 
-```yaml
-format:
-  video: "mp4"        # mp4, mkv, webm
-  audio: "mp3"        # mp3, m4a, opus
-  thumbnail: true     # Telecharger la miniature
-  embed_thumbnail: true  # Integrer dans le fichier
-```
+| Parametre | Valeur | Description |
+|-----------|--------|-------------|
+| Format video | mp4 | Compatible tous navigateurs |
+| Format audio | mp3 | Pour telechargements audio only |
+| Thumbnail | oui | Telecharge l'image miniature |
+| Embed thumbnail | oui | Integre la miniature dans le fichier video |
 
-## Performance Telechargement
+## Performance
 
-```yaml
-performance:
-  concurrent_fragments: 4    # Fragments telecharges en parallele (1-16)
-  rate_limit: null           # Limite de vitesse en Ko/s (null = illimite)
-  retries: 3                 # Nombre de tentatives en cas d'echec
-```
-
-**Interface :**
-
-```
-┌─────────────────────────────────────────┐
-│  Performance                            │
-├─────────────────────────────────────────┤
-│  Fragments simultanes :                 │
-│  ┌─────────────────────────────────┐    │
-│  │ [====●=======] 4                │    │
-│  └─────────────────────────────────┘    │
-│  (1 = lent mais stable, 16 = rapide)   │
-│                                         │
-│  Limite de vitesse :                    │
-│  ○ Illimitee (defaut)                   │
-│  ○ Personnalisee : [____] Ko/s          │
-└─────────────────────────────────────────┘
-```
+| Parametre | Plage | Defaut | Description |
+|-----------|-------|--------|-------------|
+| Fragments simultanes | 1-16 | 4 | Plus = plus rapide mais moins stable |
+| Limite vitesse | 0-illimite | illimite | En Ko/s, 0 = pas de limite |
+| Retries | 1-5 | 3 | Tentatives en cas d'echec |
 
 ## SponsorBlock
 
-```yaml
-sponsorblock:
-  enabled: true
-  action: "mark"      # mark, remove
-  categories:
-    - sponsor
-    - intro
-    - outro
-    - selfpromo
-    - preview
-    - filler
-    - interaction
-```
+Marque automatiquement les segments sponsorises dans la video.
 
-## Organisation des Fichiers
+| Parametre | Options | Description |
+|-----------|---------|-------------|
+| Actif | oui/non | Active le marquage SponsorBlock |
+| Action | **mark** / remove | `mark` = chapitres dans le lecteur, `remove` = coupe les segments |
 
-```yaml
-output:
-  template: "%(uploader)s - %(title)s [%(id)s].%(ext)s"  # Tout a plat
-  restrict_filenames: false   # Remplacer caracteres speciaux
-  windows_filenames: true     # Compatibilite Windows
-```
+**Categories detectees :**
+- sponsor (pub)
+- intro/outro
+- selfpromo (auto-promotion)
+- preview (teaser)
+- filler (remplissage)
+- interaction (like/subscribe)
 
-> **Note** : Le dossier de telechargement `/youtube` est impose dans le conteneur. L'utilisateur choisit le dossier reel cote hote via le volume Docker (voir [Conteneurs](../02-architecture/containers.md)).
+## Stockage
 
-**Interface Stockage (lecture seule) :**
+Affichage en lecture seule :
+- Espace utilise
+- Espace libre
+- Pourcentage utilisation
 
-```
-┌─────────────────────────────────────────┐
-│  Stockage                               │
-├─────────────────────────────────────────┤
-│  Espace utilise : 52.3 Go               │
-│  Espace libre   : 1.8 To                │
-│  Total          : 2.0 To                │
-│                                         │
-│  ┌─────────────────────────────────┐    │
-│  │ █████████░░░░░░░░░░░░  2.6%    │    │
-│  └─────────────────────────────────┘    │
-└─────────────────────────────────────────┘
-```
-
-## Retention
-
-```yaml
-retention:
-  enabled: false
-  days: 30              # Supprimer apres X jours
-  min_free_space: 10    # Go minimum a garder libre
-```
-
-## Notifications (optionnel)
-
-```yaml
-notifications:
-  enabled: false
-  type: "apprise"       # apprise, webhook
-  url: ""               # URL du serveur Apprise
-  on_complete: true     # Notifier quand telechargement termine
-  on_error: true        # Notifier en cas d'erreur
-```
+> Le chemin `/youtube` est fixe dans le conteneur. Pour changer le dossier reel, modifier le volume dans `docker-compose.yml`.
 
 ---
 

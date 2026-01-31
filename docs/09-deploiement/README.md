@@ -4,8 +4,9 @@ Documentation du deploiement de SuperTube.
 
 ## Contenu
 
-- [Docker Compose](./docker-compose.md) - Configurations Docker
+- [Docker Compose](./docker-compose.md) - Configuration recommandee
 - [Variables d'environnement](./variables.md) - Configuration via env
+- [Webhook](./webhook.md) - Integration Raccourcis iPhone (optionnel)
 
 ## Quick Start
 

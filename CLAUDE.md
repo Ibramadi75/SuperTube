@@ -45,8 +45,9 @@ docs/
 │   └── README.md                       # Reseau, validation entrees, filesystem
 ├── 09-deploiement/
 │   ├── README.md                       # Quick start
-│   ├── docker-compose.md               # Configurations Docker (standard, monorepo)
-│   └── variables.md                    # Variables d'environnement
+│   ├── docker-compose.md               # Configuration Docker recommandee
+│   ├── variables.md                    # Variables d'environnement
+│   └── webhook.md                      # Integration Raccourcis iPhone
 ├── 10-roadmap/
 │   ├── README.md                       # Evolutions futures V1
 │   └── fonctionnalites-futures.md      # Backlog priorise avec complexite
@@ -87,3 +88,29 @@ docs/
 - Chargement page < 1 seconde
 - Mobile-first
 - Theme sombre (palette YouTube)
+
+## Architecture Reseau
+
+```
+Port 8080 (expose)
+    │
+    ▼
+┌─────────────────────┐
+│  nginx (port 80)    │
+│  ├─ /*     → static │
+│  └─ /api/* → :3000  │
+└─────────────────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  node (port 3000)   │──────► ytdlp-api (port 3001)
+│  API REST           │        interne
+└─────────────────────┘
+```
+
+## Points Importants
+
+- **API base URL** : `http://localhost:8080/api` (pas 3000)
+- **Un seul conteneur** supertube (nginx + node dedans)
+- **Webhook optionnel** pour Raccourcis iPhone (port 9001)
+- **SponsorBlock "mark"** = chapitres dans le lecteur (pas de coupure)

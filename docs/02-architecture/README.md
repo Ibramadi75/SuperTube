@@ -11,16 +11,22 @@ Vue d'ensemble de l'architecture technique de SuperTube.
 ## Schema Global
 
 ```
-┌────────────────────────────────────────────┐
-│              Docker Network                │
-├─────────────┬─────────────┬────────────────┤
-│   supertube │   ytdlp-api │    webhook     │
-│   (app)     │  (sidecar)  │  (optionnel)   │
-│    :8080    │    :3001    │     :9001      │
-└─────────────┴─────────────┴────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                     Docker Network                        │
+├────────────────────────┬─────────────┬───────────────────┤
+│       supertube        │  ytdlp-api  │     webhook       │
+│  ┌───────┬──────────┐  │  (sidecar)  │   (optionnel)     │
+│  │ nginx │ node API │  │             │                   │
+│  │  :80  │  :3000   │  │    :3001    │      :9001        │
+│  └───────┴──────────┘  │             │                   │
+│         :8080          │   interne   │                   │
+└────────────────────────┴─────────────┴───────────────────┘
 ```
 
-> **Note** : Le webhook est optionnel. Il permet l'integration avec les Raccourcis iPhone pour declencher des telechargements a distance.
+**Ports exposes :**
+- `8080` : Interface web (nginx sert le frontend + proxy `/api` vers node)
+- `3001` : API yt-dlp (interne, non expose)
+- `9001` : Webhook (optionnel, pour Raccourcis iPhone)
 
 ---
 

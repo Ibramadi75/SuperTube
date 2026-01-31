@@ -1,18 +1,6 @@
 # Conteneurs et Volumes
 
-## Structure des Conteneurs
-
-```
-┌────────────────────────────────────────────┐
-│              Docker Network                │
-├─────────────┬─────────────┬────────────────┤
-│   supertube │   ytdlp-api │    webhook     │
-│   (app)     │  (sidecar)  │  (optionnel)   │
-│    :8080    │    :3001    │     :9001      │
-└─────────────┴─────────────┴────────────────┘
-```
-
-> **Note** : Le webhook est optionnel. Il permet l'integration avec les Raccourcis iPhone.
+Voir le [schema global](./README.md#schema-global) pour la vue d'ensemble.
 
 ## Volumes
 
