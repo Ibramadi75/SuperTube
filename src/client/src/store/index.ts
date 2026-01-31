@@ -12,6 +12,14 @@ interface AppState {
   refreshVideo: (id: string) => Promise<void>
   refreshAllVideos: () => Promise<void>
 
+  // Selection
+  selectedVideoIds: Set<string>
+  toggleVideoSelection: (id: string) => void
+  selectAllVideos: (ids: string[]) => void
+  clearSelection: () => void
+  deleteSelectedVideos: () => Promise<void>
+  refreshSelectedVideos: () => Promise<void>
+
   // Channels
   channels: Channel[]
   channelsLoading: boolean
@@ -99,6 +107,59 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (error) {
       get().addToast((error as Error).message, 'error')
     }
+  },
+
+  // Selection
+  selectedVideoIds: new Set<string>(),
+
+  toggleVideoSelection: (id: string) => {
+    const newSet = new Set(get().selectedVideoIds)
+    if (newSet.has(id)) {
+      newSet.delete(id)
+    } else {
+      newSet.add(id)
+    }
+    set({ selectedVideoIds: newSet })
+  },
+
+  selectAllVideos: (ids: string[]) => {
+    set({ selectedVideoIds: new Set(ids) })
+  },
+
+  clearSelection: () => {
+    set({ selectedVideoIds: new Set() })
+  },
+
+  deleteSelectedVideos: async () => {
+    const ids = Array.from(get().selectedVideoIds)
+    let deleted = 0
+    for (const id of ids) {
+      try {
+        await api.deleteVideo(id)
+        deleted++
+      } catch {
+        // Continue with other deletions
+      }
+    }
+    get().addToast(`${deleted} video${deleted > 1 ? 's' : ''} supprimee${deleted > 1 ? 's' : ''}`, 'success')
+    get().clearSelection()
+    get().fetchVideos()
+    get().fetchChannels()
+  },
+
+  refreshSelectedVideos: async () => {
+    const ids = Array.from(get().selectedVideoIds)
+    let updated = 0
+    for (const id of ids) {
+      try {
+        await api.refreshVideo(id)
+        updated++
+      } catch {
+        // Continue with other refreshes
+      }
+    }
+    get().addToast(`${updated} video${updated > 1 ? 's' : ''} mise${updated > 1 ? 's' : ''} a jour`, 'success')
+    get().fetchVideos()
   },
 
   // Channels

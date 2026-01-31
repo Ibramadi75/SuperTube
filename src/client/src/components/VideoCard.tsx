@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import type { Video } from '../types'
 import { getThumbnailUrl } from '../api'
 
@@ -5,9 +6,27 @@ interface VideoCardProps {
   video: Video
   onClick: () => void
   onDelete?: () => void
+  onSelect?: () => void
+  isSelected?: boolean
+  selectionMode?: boolean
 }
 
-export function VideoCard({ video, onClick, onDelete }: VideoCardProps) {
+export function VideoCard({ video, onClick, onDelete, onSelect, isSelected, selectionMode }: VideoCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [menuOpen])
+
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return '--:--'
     const h = Math.floor(seconds / 3600)
@@ -29,12 +48,79 @@ export function VideoCard({ video, onClick, onDelete }: VideoCardProps) {
     return `${size.toFixed(1)} ${units[unitIndex]}`
   }
 
+  const handleCardClick = () => {
+    if (selectionMode && onSelect) {
+      onSelect()
+    } else {
+      onClick()
+    }
+  }
+
   return (
-    <div className="group relative bg-[var(--bg-secondary)] rounded-lg overflow-hidden hover:bg-[var(--bg-tertiary)] transition-colors">
+    <div className={`group relative bg-[var(--bg-secondary)] rounded-lg overflow-hidden hover:bg-[var(--bg-tertiary)] transition-colors ${isSelected ? 'ring-2 ring-[var(--accent)]' : ''}`}>
+      {/* Three-dot menu */}
+      {!selectionMode && onSelect && (
+        <div className="absolute top-2 right-2 z-10" ref={menuRef}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setMenuOpen(!menuOpen)
+            }}
+            className="opacity-0 group-hover:opacity-100 p-1.5 bg-black/60 hover:bg-black/80 rounded-full transition-opacity"
+          >
+            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 mt-1 bg-[var(--bg-tertiary)] border border-[var(--bg-secondary)] rounded-lg shadow-lg py-1 min-w-[140px]">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                  onSelect()
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-white hover:bg-[var(--bg-secondary)] flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Selectionner
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Selection checkbox */}
+      {selectionMode && (
+        <div className="absolute top-2 left-2 z-10">
+          <div
+            onClick={(e) => {
+              e.stopPropagation()
+              onSelect?.()
+            }}
+            className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
+              isSelected
+                ? 'bg-[var(--accent)] border-[var(--accent)]'
+                : 'bg-black/40 border-white/60 hover:border-white'
+            }`}
+          >
+            {isSelected && (
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Thumbnail */}
       <div
         className="relative aspect-video bg-[var(--bg-tertiary)] cursor-pointer"
-        onClick={onClick}
+        onClick={handleCardClick}
       >
         {video.thumbnailPath && (
           <img
@@ -58,21 +144,23 @@ export function VideoCard({ video, onClick, onDelete }: VideoCardProps) {
           {formatDuration(video.duration)}
         </div>
 
-        {/* Play overlay */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
+        {/* Play overlay - only show when not in selection mode */}
+        {!selectionMode && (
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Info */}
       <div className="p-3">
         <h3
           className="font-medium text-white line-clamp-2 cursor-pointer hover:text-[var(--accent)]"
-          onClick={onClick}
+          onClick={handleCardClick}
           title={video.title}
         >
           {video.title}
@@ -80,7 +168,7 @@ export function VideoCard({ video, onClick, onDelete }: VideoCardProps) {
         <p className="text-sm text-[var(--text-secondary)] mt-1">{video.uploader}</p>
         <div className="flex items-center justify-between mt-2 text-xs text-[var(--text-secondary)]">
           <span>{formatSize(video.filesize)}</span>
-          {onDelete && (
+          {!selectionMode && onDelete && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
