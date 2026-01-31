@@ -5,13 +5,6 @@ public static class DbSeeder
     public static void Seed(AppDbContext db)
     {
         SeedSettings(db);
-
-        // Only seed test videos in Development
-        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
-        {
-            SeedTestVideos(db);
-        }
-
         db.SaveChanges();
     }
 
@@ -40,50 +33,4 @@ public static class DbSeeder
         }
     }
 
-    private static void SeedTestVideos(AppDbContext db)
-    {
-        if (db.Videos.Any()) return;
-
-        var testVideos = new[]
-        {
-            new Video
-            {
-                Id = "dQw4w9WgXcQ",
-                Title = "Rick Astley - Never Gonna Give You Up",
-                Uploader = "Rick Astley",
-                Duration = 212,
-                Filepath = "/youtube/Rick Astley - Never Gonna Give You Up [dQw4w9WgXcQ].mp4",
-                ThumbnailPath = null, // Fake data - no actual file
-                Filesize = 45_000_000,
-                DownloadedAt = DateTime.UtcNow.AddDays(-5),
-                YoutubeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-            },
-            new Video
-            {
-                Id = "jNQXAC9IVRw",
-                Title = "Me at the zoo",
-                Uploader = "jawed",
-                Duration = 19,
-                Filepath = "/youtube/jawed - Me at the zoo [jNQXAC9IVRw].mp4",
-                ThumbnailPath = "/youtube/jawed - Me at the zoo [jNQXAC9IVRw]-thumb.jpg",
-                Filesize = 2_500_000,
-                DownloadedAt = DateTime.UtcNow.AddDays(-3),
-                YoutubeUrl = "https://www.youtube.com/watch?v=jNQXAC9IVRw"
-            },
-            new Video
-            {
-                Id = "9bZkp7q19f0",
-                Title = "PSY - GANGNAM STYLE",
-                Uploader = "officialpsy",
-                Duration = 253,
-                Filepath = "/youtube/officialpsy - PSY - GANGNAM STYLE [9bZkp7q19f0].mp4",
-                ThumbnailPath = null, // Fake data - no actual file
-                Filesize = 85_000_000,
-                DownloadedAt = DateTime.UtcNow.AddDays(-1),
-                YoutubeUrl = "https://www.youtube.com/watch?v=9bZkp7q19f0"
-            }
-        };
-
-        db.Videos.AddRange(testVideos);
-    }
 }
