@@ -23,10 +23,6 @@ export function Dashboard() {
     fetchDownloads()
     fetchStats()
     fetchStorage()
-
-    // Poll downloads every 2 seconds
-    const interval = setInterval(fetchDownloads, 2000)
-    return () => clearInterval(interval)
   }, [fetchVideos, fetchDownloads, fetchStats, fetchStorage])
 
   const activeDownloads = downloads.filter((d) => d.status === 0 || d.status === 1)
