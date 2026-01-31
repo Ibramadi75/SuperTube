@@ -1,7 +1,7 @@
 # SuperTube - Roadmap de Developpement
 
 > Derniere mise a jour : 2025-01-31
-> Status global : **Phase 1 - Setup en cours**
+> Status global : **Phase 1 - Backend + Frontend OK, Docker a tester**
 
 ---
 
@@ -29,7 +29,7 @@
 - [x] Configurer le `.csproj` pour AOT (PublishAot, InvariantGlobalization)
 - [x] Ajouter les packages NuGet : EF Core SQLite
 - [x] Creer `appsettings.json` avec config de base
-- [ ] Verifier que ca build et demarre sur le port 5000
+- [x] Verifier que ca build et demarre sur le port 5000
 
 ### 1.3 Frontend React - Projet initial
 - [x] `npm create vite@latest` avec template React + TypeScript
@@ -37,7 +37,7 @@
 - [x] Installer Zustand pour le state management
 - [x] Installer React Router pour la navigation
 - [x] Configurer le proxy Vite vers `localhost:5000/api` (dev)
-- [ ] Verifier que ca demarre sur le port 5173
+- [x] Verifier que ca demarre sur le port 5173
 
 ### 1.4 Docker - Configuration dev
 - [x] Ecrire `docker-compose.dev.yml` avec hot-reload
@@ -346,6 +346,6 @@ _Utilise cette section pour noter ou tu en es quand tu t'arretes :_
 
 **2025-01-31** : Documentation terminee. Stack choisie : .NET 8 + React. Pret a commencer Phase 1.
 
-**2025-01-31** : Phase 1 setup en cours. Backend .NET cree avec EF Core + SQLite. Frontend React cree avec Vite + Tailwind + React Router. Docker dev configure. **A TESTER** : lancer les deux projets et verifier la communication.
+**2025-01-31** : Phase 1 setup en cours. Backend .NET cree avec EF Core + SQLite. Frontend React cree avec Vite + Tailwind + React Router. Docker dev configure. **TESTE OK** : API sur :5000, Frontend sur :5173.
 
 ---
