@@ -19,6 +19,16 @@ export async function deleteVideo(id: string): Promise<void> {
   await api.delete(`/api/videos/${id}`)
 }
 
+export async function refreshVideo(id: string): Promise<Video> {
+  const response = await api.post<ApiResponse<Video>>(`/api/videos/${id}/refresh`)
+  return response.data
+}
+
+export async function refreshAllVideos(): Promise<{ updated: number; failed: number; total: number }> {
+  const response = await api.post<ApiResponse<{ updated: number; failed: number; total: number }>>('/api/videos/refresh')
+  return response.data
+}
+
 export function getStreamUrl(id: string): string {
   return api.getStreamUrl(id)
 }

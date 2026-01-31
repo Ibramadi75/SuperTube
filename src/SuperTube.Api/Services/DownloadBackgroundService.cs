@@ -144,7 +144,7 @@ public class DownloadBackgroundService : BackgroundService
                 // Create video entry
                 if (finalStatus.Result != null)
                 {
-                    await CreateVideoEntryAsync(db, finalStatus.Result, videoInfo?.Duration, cts.Token);
+                    await CreateVideoEntryAsync(db, finalStatus.Result, videoInfo?.Duration, download.Url, cts.Token);
                 }
             }
             else
@@ -191,7 +191,7 @@ public class DownloadBackgroundService : BackgroundService
         }
     }
 
-    private async Task CreateVideoEntryAsync(AppDbContext db, YtdlpDownloadResult result, int? duration, CancellationToken ct)
+    private async Task CreateVideoEntryAsync(AppDbContext db, YtdlpDownloadResult result, int? duration, string youtubeUrl, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(result.VideoId) || string.IsNullOrEmpty(result.Filepath))
             return;
@@ -216,6 +216,7 @@ public class DownloadBackgroundService : BackgroundService
             ThumbnailPath = File.Exists(thumbnailPath) ? thumbnailPath : null,
             Filesize = fileInfo.Exists ? fileInfo.Length : null,
             DownloadedAt = DateTime.UtcNow,
+            YoutubeUrl = youtubeUrl,
         };
 
         db.Videos.Add(video);

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SuperTube.Api.Data;
+using SuperTube.Api.Services;
 
 namespace SuperTube.Api.Endpoints;
 
@@ -78,6 +79,61 @@ public static class VideoEndpoints
                 return Results.NotFound(new { error = new { code = "THUMBNAIL_NOT_FOUND", message = "Thumbnail not found" } });
 
             return Results.File(video.ThumbnailPath, "image/jpeg");
+        });
+
+        // POST /api/videos/{id}/refresh - Refresh video metadata
+        group.MapPost("/{id}/refresh", async (string id, AppDbContext db, IYtdlpService ytdlpService) =>
+        {
+            var video = await db.Videos.FindAsync(id);
+            if (video is null)
+                return Results.NotFound(new { error = new { code = "VIDEO_NOT_FOUND", message = $"Video '{id}' not found" } });
+
+            // Build YouTube URL from video ID if not stored
+            var url = video.YoutubeUrl ?? $"https://www.youtube.com/watch?v={video.Id}";
+
+            var info = await ytdlpService.GetVideoInfoAsync(url);
+            if (info is null)
+                return Results.BadRequest(new { error = new { code = "FETCH_FAILED", message = "Failed to fetch video info from YouTube" } });
+
+            video.Title = info.Title ?? video.Title;
+            video.Uploader = info.Uploader ?? video.Uploader;
+            video.Duration = info.Duration ?? video.Duration;
+            video.YoutubeUrl ??= url;
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { data = video });
+        });
+
+        // POST /api/videos/refresh - Refresh all videos metadata
+        group.MapPost("/refresh", async (AppDbContext db, IYtdlpService ytdlpService) =>
+        {
+            var videos = await db.Videos.ToListAsync();
+            var updated = 0;
+            var failed = 0;
+
+            foreach (var video in videos)
+            {
+                var url = video.YoutubeUrl ?? $"https://www.youtube.com/watch?v={video.Id}";
+                var info = await ytdlpService.GetVideoInfoAsync(url);
+
+                if (info is not null)
+                {
+                    video.Title = info.Title ?? video.Title;
+                    video.Uploader = info.Uploader ?? video.Uploader;
+                    video.Duration = info.Duration ?? video.Duration;
+                    video.YoutubeUrl ??= url;
+                    updated++;
+                }
+                else
+                {
+                    failed++;
+                }
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { data = new { updated, failed, total = videos.Count } });
         });
     }
 }

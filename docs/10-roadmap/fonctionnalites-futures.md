@@ -11,6 +11,7 @@ Liste de fonctionnalites potentielles a evaluer pour les versions futures.
 | **Retry automatique** | Relancer automatiquement un telechargement echoue (configurable : 1-5 tentatives) | Faible |
 | **Mise a jour yt-dlp** | Bouton pour mettre a jour yt-dlp dans le conteneur (YouTube change souvent ses APIs) | Faible |
 | **Previsualisation** | Avant telechargement : afficher titre, chaine, duree, taille estimee, thumbnail | Moyenne |
+| **Refresh metadonnees** | Rafraichir les metadonnees (duree, titre, uploader) par video, par chaine ou pour toute la bibliotheque | Faible |
 
 ## Priorite Moyenne (Pratiques)
 

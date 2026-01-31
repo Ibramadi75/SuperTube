@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SuperTube.Api.Data;
+using SuperTube.Api.Services;
 
 namespace SuperTube.Api.Endpoints;
 
@@ -66,6 +67,44 @@ public static class ChannelEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(new { data = new { deletedCount = videos.Count } });
+        });
+
+        // POST /api/channels/{name}/refresh - Refresh all videos metadata for a channel
+        group.MapPost("/{name}/refresh", async (string name, AppDbContext db, IYtdlpService ytdlpService) =>
+        {
+            var decodedName = Uri.UnescapeDataString(name);
+            var videos = await db.Videos
+                .Where(v => v.Uploader == decodedName)
+                .ToListAsync();
+
+            if (!videos.Any())
+                return Results.NotFound(new { error = new { code = "CHANNEL_NOT_FOUND", message = $"Channel '{decodedName}' not found" } });
+
+            var updated = 0;
+            var failed = 0;
+
+            foreach (var video in videos)
+            {
+                var url = video.YoutubeUrl ?? $"https://www.youtube.com/watch?v={video.Id}";
+                var info = await ytdlpService.GetVideoInfoAsync(url);
+
+                if (info is not null)
+                {
+                    video.Title = info.Title ?? video.Title;
+                    video.Uploader = info.Uploader ?? video.Uploader;
+                    video.Duration = info.Duration ?? video.Duration;
+                    video.YoutubeUrl ??= url;
+                    updated++;
+                }
+                else
+                {
+                    failed++;
+                }
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { data = new { updated, failed, total = videos.Count } });
         });
     }
 }

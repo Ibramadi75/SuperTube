@@ -9,12 +9,15 @@ interface AppState {
   videosError: string | null
   fetchVideos: () => Promise<void>
   deleteVideo: (id: string) => Promise<void>
+  refreshVideo: (id: string) => Promise<void>
+  refreshAllVideos: () => Promise<void>
 
   // Channels
   channels: Channel[]
   channelsLoading: boolean
   fetchChannels: () => Promise<void>
   deleteChannel: (name: string) => Promise<void>
+  refreshChannel: (name: string) => Promise<void>
 
   // Downloads
   downloads: Download[]
@@ -78,6 +81,26 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  refreshVideo: async (id: string) => {
+    try {
+      const video = await api.refreshVideo(id)
+      set({ videos: get().videos.map((v) => (v.id === id ? video : v)) })
+      get().addToast('Metadonnees mises a jour', 'success')
+    } catch (error) {
+      get().addToast((error as Error).message, 'error')
+    }
+  },
+
+  refreshAllVideos: async () => {
+    try {
+      const result = await api.refreshAllVideos()
+      get().addToast(`${result.updated} videos mises a jour`, 'success')
+      get().fetchVideos() // Refresh the list
+    } catch (error) {
+      get().addToast((error as Error).message, 'error')
+    }
+  },
+
   // Channels
   channels: [],
   channelsLoading: false,
@@ -98,6 +121,16 @@ export const useStore = create<AppState>((set, get) => ({
       get().addToast(`Chaine "${name}" supprimee`, 'success')
       get().fetchVideos()
       get().fetchChannels()
+    } catch (error) {
+      get().addToast((error as Error).message, 'error')
+    }
+  },
+
+  refreshChannel: async (name: string) => {
+    try {
+      const result = await api.refreshChannel(name)
+      get().addToast(`${result.updated} videos mises a jour`, 'success')
+      get().fetchVideos() // Refresh the list
     } catch (error) {
       get().addToast((error as Error).message, 'error')
     }
