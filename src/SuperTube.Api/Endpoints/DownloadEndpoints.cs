@@ -101,7 +101,11 @@ public static class DownloadEndpoints
         {
             var download = await db.Downloads.FindAsync(id);
             if (download is null)
-                return Results.NotFound(new { error = new { code = "DOWNLOAD_NOT_FOUND", message = $"Download '{id}' not found" } });
+            {
+                httpContext.Response.StatusCode = 404;
+                await httpContext.Response.WriteAsJsonAsync(new { error = new { code = "DOWNLOAD_NOT_FOUND", message = $"Download '{id}' not found" } }, ct);
+                return;
+            }
 
             httpContext.Response.Headers["Content-Type"] = "text/event-stream";
             httpContext.Response.Headers["Cache-Control"] = "no-cache";
@@ -110,50 +114,55 @@ public static class DownloadEndpoints
             var lastProgress = -1;
             var lastStatus = "";
 
-            while (!ct.IsCancellationRequested)
+            try
             {
-                // Refresh from database
-                await db.Entry(download).ReloadAsync(ct);
-
-                // Only send if changed
-                if (download.Progress != lastProgress || download.Status.ToString() != lastStatus)
+                while (!ct.IsCancellationRequested)
                 {
-                    lastProgress = download.Progress;
-                    lastStatus = download.Status.ToString();
+                    // Refresh from database
+                    await db.Entry(download).ReloadAsync(ct);
 
-                    var data = System.Text.Json.JsonSerializer.Serialize(new
+                    // Only send if changed
+                    if (download.Progress != lastProgress || download.Status.ToString() != lastStatus)
                     {
-                        id = download.Id,
-                        status = download.Status.ToString().ToLowerInvariant(),
-                        progress = download.Progress,
-                        speed = download.Speed,
-                        eta = download.Eta,
-                        fragmentIndex = download.FragmentIndex,
-                        fragmentCount = download.FragmentCount,
-                    });
+                        lastProgress = download.Progress;
+                        lastStatus = download.Status.ToString();
 
-                    await httpContext.Response.WriteAsync($"event: progress\ndata: {data}\n\n", ct);
-                    await httpContext.Response.Body.FlushAsync(ct);
-                }
+                        var data = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            id = download.Id,
+                            status = download.Status.ToString().ToLowerInvariant(),
+                            progress = download.Progress,
+                            speed = download.Speed,
+                            eta = download.Eta,
+                            fragmentIndex = download.FragmentIndex,
+                            fragmentCount = download.FragmentCount,
+                        });
 
-                // Stop if download finished
-                if (download.Status is DownloadStatus.Completed or DownloadStatus.Failed)
-                {
-                    var finalData = System.Text.Json.JsonSerializer.Serialize(new
+                        await httpContext.Response.WriteAsync($"event: progress\ndata: {data}\n\n", ct);
+                        await httpContext.Response.Body.FlushAsync(ct);
+                    }
+
+                    // Stop if download finished
+                    if (download.Status is DownloadStatus.Completed or DownloadStatus.Failed)
                     {
-                        id = download.Id,
-                        status = download.Status.ToString().ToLowerInvariant(),
-                        progress = download.Progress,
-                        error = download.Error,
-                    });
-                    await httpContext.Response.WriteAsync($"event: complete\ndata: {finalData}\n\n", ct);
-                    break;
-                }
+                        var finalData = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            id = download.Id,
+                            status = download.Status.ToString().ToLowerInvariant(),
+                            progress = download.Progress,
+                            error = download.Error,
+                        });
+                        await httpContext.Response.WriteAsync($"event: complete\ndata: {finalData}\n\n", ct);
+                        return;
+                    }
 
-                await Task.Delay(500, ct);
+                    await Task.Delay(500, ct);
+                }
             }
-
-            return Results.Empty;
+            catch (OperationCanceledException)
+            {
+                // Client disconnected, this is normal
+            }
         });
     }
 
