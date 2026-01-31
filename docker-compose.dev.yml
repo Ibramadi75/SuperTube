@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  # Backend .NET API (dev mode with hot-reload)
+  api:
+    build:
+      context: ./src/SuperTube.Api
+      dockerfile: Dockerfile.dev
+    container_name: supertube-api-dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./src/SuperTube.Api:/app
+      - ./data:/app/data
+      - ./youtube:/youtube
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - DATA_PATH=/app/data
+      - YTDLP_API_URL=http://ytdlp-api:3001
+    depends_on:
+      - ytdlp-api
+
+  # Frontend React (dev server)
+  client:
+    build:
+      context: ./src/client
+      dockerfile: Dockerfile.dev
+    container_name: supertube-client-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./src/client:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:5000
+
+  # yt-dlp API
+  ytdlp-api:
+    image: jauderho/yt-dlp:latest
+    container_name: ytdlp-api-dev
+    volumes:
+      - ./youtube:/youtube
+    environment:
+      - TZ=Europe/Paris

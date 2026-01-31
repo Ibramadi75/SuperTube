@@ -1,7 +1,7 @@
 # SuperTube - Roadmap de Developpement
 
 > Derniere mise a jour : 2025-01-31
-> Status global : **Phase 0 - Documentation terminee**
+> Status global : **Phase 1 - Setup en cours**
 
 ---
 
@@ -19,28 +19,28 @@
 ## Phase 1 : Setup Projet
 
 ### 1.1 Structure du repository
-- [ ] Creer le dossier `src/SuperTube.Api/` pour le backend .NET
-- [ ] Creer le dossier `src/client/` pour le frontend React
-- [ ] Ajouter `.gitignore` adapte (.NET + Node)
-- [ ] Ajouter `docker-compose.yml` de dev (sans build, volumes locaux)
+- [x] Creer le dossier `src/SuperTube.Api/` pour le backend .NET
+- [x] Creer le dossier `src/client/` pour le frontend React
+- [x] Ajouter `.gitignore` adapte (.NET + Node)
+- [x] Ajouter `docker-compose.dev.yml` (avec Dockerfiles dev)
 
 ### 1.2 Backend .NET - Projet initial
-- [ ] `dotnet new web` avec le bon nom de projet
-- [ ] Configurer le `.csproj` pour AOT (PublishAot, InvariantGlobalization)
-- [ ] Ajouter les packages NuGet : EF Core SQLite, Swashbuckle (dev only)
-- [ ] Creer `appsettings.json` avec config de base
+- [x] `dotnet new web` avec le bon nom de projet
+- [x] Configurer le `.csproj` pour AOT (PublishAot, InvariantGlobalization)
+- [x] Ajouter les packages NuGet : EF Core SQLite
+- [x] Creer `appsettings.json` avec config de base
 - [ ] Verifier que ca build et demarre sur le port 5000
 
 ### 1.3 Frontend React - Projet initial
-- [ ] `npm create vite@latest` avec template React + TypeScript
-- [ ] Installer Tailwind CSS et le configurer
-- [ ] Installer Zustand pour le state management
-- [ ] Installer React Router pour la navigation
-- [ ] Configurer le proxy Vite vers `localhost:5000/api` (dev)
+- [x] `npm create vite@latest` avec template React + TypeScript
+- [x] Installer Tailwind CSS et le configurer
+- [x] Installer Zustand pour le state management
+- [x] Installer React Router pour la navigation
+- [x] Configurer le proxy Vite vers `localhost:5000/api` (dev)
 - [ ] Verifier que ca demarre sur le port 5173
 
 ### 1.4 Docker - Configuration dev
-- [ ] Ecrire `docker-compose.dev.yml` avec hot-reload
+- [x] Ecrire `docker-compose.dev.yml` avec hot-reload
 - [ ] Tester que les 2 services demarrent ensemble
 - [ ] Verifier la communication frontend -> backend
 
@@ -49,13 +49,13 @@
 ## Phase 2 : Base de Donnees
 
 ### 2.1 Modeles EF Core
-- [ ] Creer l'entite `Video` avec toutes les proprietes
-- [ ] Creer l'entite `Download` avec les metriques
-- [ ] Creer l'entite `Setting` (key/value)
-- [ ] Creer `AppDbContext` avec les DbSet
+- [x] Creer l'entite `Video` avec toutes les proprietes
+- [x] Creer l'entite `Download` avec les metriques
+- [x] Creer l'entite `Setting` (key/value)
+- [x] Creer `AppDbContext` avec les DbSet
 
 ### 2.2 Configuration EF Core
-- [ ] Configurer les index dans `OnModelCreating`
+- [x] Configurer les index dans `OnModelCreating`
 - [ ] Ajouter la migration initiale (`dotnet ef migrations add Initial`)
 - [ ] Tester la creation de la BDD au demarrage
 - [ ] Verifier que le fichier `supertube.db` est bien cree dans `/app/data`
@@ -141,18 +141,18 @@
 ## Phase 5 : Frontend - Structure
 
 ### 5.1 Layout principal
-- [ ] Creer le composant `Layout` avec header + contenu
-- [ ] Creer le composant `Header` avec logo et navigation
+- [x] Creer le composant `Layout` avec header + contenu
+- [x] Creer le composant `Header` avec logo et navigation
 - [ ] Creer le composant `MobileNav` (menu hamburger)
-- [ ] Appliquer le theme sombre (couleurs YouTube)
+- [x] Appliquer le theme sombre (couleurs YouTube)
 
 ### 5.2 Routing
-- [ ] Configurer React Router avec les routes :
+- [x] Configurer React Router avec les routes :
   - `/` → Dashboard
   - `/library` → Bibliotheque
   - `/library/:channel` → Videos d'une chaine
   - `/settings` → Parametres
-- [ ] Ajouter la page 404
+- [x] Ajouter la page 404
 
 ### 5.3 State management (Zustand)
 - [ ] Creer le store principal avec les slices :
@@ -345,5 +345,7 @@ Ces fonctionnalites ne sont PAS dans le scope V1 :
 _Utilise cette section pour noter ou tu en es quand tu t'arretes :_
 
 **2025-01-31** : Documentation terminee. Stack choisie : .NET 8 + React. Pret a commencer Phase 1.
+
+**2025-01-31** : Phase 1 setup en cours. Backend .NET cree avec EF Core + SQLite. Frontend React cree avec Vite + Tailwind + React Router. Docker dev configure. **A TESTER** : lancer les deux projets et verifier la communication.
 
 ---

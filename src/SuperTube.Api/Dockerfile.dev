@@ -1,0 +1,14 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+WORKDIR /app
+
+# Install dotnet-watch for hot-reload
+RUN dotnet tool install --global dotnet-watch
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
+COPY *.csproj ./
+RUN dotnet restore
+
+EXPOSE 5000
+
+CMD ["dotnet", "watch", "run", "--urls", "http://+:5000"]
