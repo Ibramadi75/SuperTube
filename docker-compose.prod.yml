@@ -3,7 +3,7 @@
 
 services:
   supertube:
-    image: ibramadi75/supertube:latest
+    image: ibrahimmadi10/supertube:latest
     container_name: supertube
     ports:
       - "8080:80"
@@ -21,7 +21,7 @@ services:
       - supertube-net
 
   ytdlp-api:
-    image: ibramadi75/supertube-ytdlp:latest
+    image: ibrahimmadi10/supertube-ytdlp:latest
     container_name: ytdlp-api
     volumes:
       - supertube-videos:/youtube
@@ -33,7 +33,7 @@ services:
       - supertube-net
 
   webhook:
-    image: ibramadi75/supertube-webhook:latest
+    image: ibrahimmadi10/supertube-webhook:latest
     container_name: supertube-webhook
     ports:
       - "${WEBHOOK_PORT:-9001}:9000"
