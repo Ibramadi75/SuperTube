@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
 import { DownloadForm, DownloadProgress, VideoCard, VideoPlayer } from '../components'
@@ -18,6 +18,8 @@ export function Dashboard() {
     deleteVideo,
   } = useStore()
 
+  const [showManualDownload, setShowManualDownload] = useState(false)
+
   useEffect(() => {
     fetchVideos()
     fetchDownloads()
@@ -36,12 +38,6 @@ export function Dashboard() {
         <p className="text-[var(--text-secondary)] mt-1">
           Telecharger et gerer vos videos YouTube
         </p>
-      </div>
-
-      {/* Download Form */}
-      <div className="bg-[var(--bg-secondary)] rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Nouveau telechargement</h2>
-        <DownloadForm />
       </div>
 
       {/* Stats */}
@@ -120,6 +116,82 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* iOS Shortcut Tutorial */}
+      <div className="bg-[var(--bg-secondary)] rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-[var(--accent)]/20 rounded-xl">
+            <svg className="w-8 h-8 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-white mb-2">Telecharger depuis iPhone</h2>
+            <p className="text-[var(--text-secondary)] text-sm mb-4">
+              Configurez un raccourci iOS pour telecharger des videos directement depuis YouTube ou Safari.
+            </p>
+
+            <div className="space-y-4">
+              <TutorialStep
+                number={1}
+                title="Ouvrir Raccourcis"
+                description="Ouvrez l'app Raccourcis sur votre iPhone et creez un nouveau raccourci."
+              />
+              <TutorialStep
+                number={2}
+                title="Ajouter l'action"
+                description={'Ajoutez "Obtenir le contenu de l\'URL" avec ces parametres :'}
+              >
+                <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 mt-2 text-sm font-mono">
+                  <p><span className="text-[var(--text-secondary)]">URL :</span> <span className="text-[var(--accent)]">http://VOTRE_IP:9001/hooks/download</span></p>
+                  <p><span className="text-[var(--text-secondary)]">Methode :</span> POST</p>
+                  <p><span className="text-[var(--text-secondary)]">Corps :</span> JSON</p>
+                  <p className="text-amber-400">{"{"}"url": "[Entree du raccourci]"{"}"}</p>
+                  <p><span className="text-[var(--text-secondary)]">En-tete :</span> X-Webhook-Token: <span className="text-green-400">votre-token</span></p>
+                </div>
+              </TutorialStep>
+              <TutorialStep
+                number={3}
+                title="Activer le partage"
+                description={'Dans les reglages du raccourci, activez "Afficher dans la feuille de partage" et selectionnez "URL".'}
+              />
+              <TutorialStep
+                number={4}
+                title="Utiliser"
+                description="Depuis YouTube ou Safari, appuyez sur Partager puis selectionnez votre raccourci."
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Manual Download - Collapsible */}
+      <div className="bg-[var(--bg-secondary)] rounded-xl overflow-hidden">
+        <button
+          onClick={() => setShowManualDownload(!showManualDownload)}
+          className="w-full p-4 flex items-center justify-between text-left hover:bg-[var(--bg-tertiary)] transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <span className="text-[var(--text-secondary)]">Telecharger depuis l'interface web</span>
+          </div>
+          <svg
+            className={`w-5 h-5 text-[var(--text-secondary)] transition-transform ${showManualDownload ? 'rotate-180' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {showManualDownload && (
+          <div className="p-4 pt-0 border-t border-[var(--bg-tertiary)]">
+            <DownloadForm />
+          </div>
+        )}
+      </div>
+
       {/* Recent Videos */}
       {recentVideos.length > 0 && (
         <div>
@@ -157,7 +229,7 @@ export function Dashboard() {
           </svg>
           <h3 className="text-lg font-medium text-white mb-2">Aucune video</h3>
           <p className="text-[var(--text-secondary)]">
-            Collez une URL YouTube ci-dessus pour commencer
+            Configurez le raccourci iOS ci-dessus pour commencer
           </p>
         </div>
       )}
@@ -182,6 +254,31 @@ function StatCard({ label, value, icon }: { label: string; value: string; icon: 
           <p className="text-2xl font-bold text-white">{value}</p>
           <p className="text-sm text-[var(--text-secondary)]">{label}</p>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function TutorialStep({
+  number,
+  title,
+  description,
+  children
+}: {
+  number: number
+  title: string
+  description: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[var(--accent)] text-white text-sm font-bold flex items-center justify-center">
+        {number}
+      </div>
+      <div>
+        <h3 className="text-white font-medium">{title}</h3>
+        <p className="text-[var(--text-secondary)] text-sm">{description}</p>
+        {children}
       </div>
     </div>
   )
