@@ -34,6 +34,21 @@ export function Dashboard() {
     getWebhookConfig().then(setWebhookConfig).catch(() => {})
   }, [fetchVideos, fetchDownloads, fetchStats, fetchStorage])
 
+  // Polling for downloads - fast when active, slower otherwise
+  useEffect(() => {
+    const hasActiveDownloads = downloads.some((d) => d.status === 0 || d.status === 1)
+    const interval = hasActiveDownloads ? 2000 : 5000
+
+    const timer = setInterval(() => {
+      fetchDownloads()
+      if (hasActiveDownloads) {
+        fetchVideos() // Refresh videos when download completes
+      }
+    }, interval)
+
+    return () => clearInterval(timer)
+  }, [downloads, fetchDownloads, fetchVideos])
+
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text)
     setCopiedField(field)
