@@ -30,3 +30,8 @@ export async function regenerateWebhookToken(): Promise<{ token: string }> {
   const response = await api.post<ApiResponse<{ token: string }>>('/api/webhook/regenerate', {})
   return response.data
 }
+
+export async function setWebhookToken(token: string): Promise<{ token: string }> {
+  const response = await api.put<ApiResponse<{ token: string }>>('/api/webhook/token', { token })
+  return response.data
+}

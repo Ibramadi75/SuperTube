@@ -182,6 +182,30 @@ public static class StatsEndpoints
             return Results.Ok(new { data = new { token = newToken } });
         });
 
+        // PUT /api/webhook/token - Set token manually
+        app.MapPut("/api/webhook/token", async (SetTokenRequest request, AppDbContext db) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Token))
+            {
+                return Results.BadRequest(new { error = "Token cannot be empty" });
+            }
+
+            var tokenValue = await db.Settings.FindAsync("webhook.token");
+
+            if (tokenValue is not null)
+            {
+                tokenValue.Value = request.Token;
+            }
+            else
+            {
+                db.Settings.Add(new Setting { Key = "webhook.token", Value = request.Token });
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { data = new { token = request.Token } });
+        });
+
         // GET /api/storage - Storage info
         app.MapGet("/api/storage", () =>
         {
@@ -255,3 +279,4 @@ public static class StatsEndpoints
 
 public record WebhookUpdateRequest(bool RequireToken);
 public record TokenVerifyRequest(string Token);
+public record SetTokenRequest(string Token);
