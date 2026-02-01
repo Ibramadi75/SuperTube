@@ -75,7 +75,6 @@ public static class StatsEndpoints
         // GET /api/webhook - Webhook configuration
         app.MapGet("/api/webhook", async (AppDbContext db) =>
         {
-            var webhookHost = Environment.GetEnvironmentVariable("WEBHOOK_HOST") ?? "VOTRE_IP";
             var webhookPort = Environment.GetEnvironmentVariable("WEBHOOK_PORT") ?? "9001";
 
             var tokenEnabled = await db.Settings.FindAsync("webhook.tokenEnabled");
@@ -91,7 +90,7 @@ public static class StatsEndpoints
                     enabled = true,
                     requiresToken,
                     token,
-                    url = $"http://{webhookHost}:{webhookPort}/hooks/download"
+                    port = webhookPort
                 }
             });
         });
@@ -129,7 +128,6 @@ public static class StatsEndpoints
             await db.SaveChangesAsync();
 
             // Return updated config
-            var webhookHost = Environment.GetEnvironmentVariable("WEBHOOK_HOST") ?? "VOTRE_IP";
             var webhookPort = Environment.GetEnvironmentVariable("WEBHOOK_PORT") ?? "9001";
             var finalToken = request.RequireToken ? (await db.Settings.FindAsync("webhook.token"))?.Value ?? "" : "";
 
@@ -140,7 +138,7 @@ public static class StatsEndpoints
                     enabled = true,
                     requiresToken = request.RequireToken,
                     token = finalToken,
-                    url = $"http://{webhookHost}:{webhookPort}/hooks/download"
+                    port = webhookPort
                 }
             });
         });

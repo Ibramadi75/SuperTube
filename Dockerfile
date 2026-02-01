@@ -38,7 +38,6 @@ RUN mkdir -p /data /youtube /var/run/nginx
 ENV ASPNETCORE_URLS=http://+:5000
 ENV DATA_PATH=/data
 ENV YTDLP_API_URL=http://ytdlp-api:3001
-ENV WEBHOOK_HOST=localhost
 ENV WEBHOOK_PORT=9001
 
 # Expose port 80 (nginx)

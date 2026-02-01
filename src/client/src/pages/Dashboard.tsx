@@ -43,6 +43,11 @@ export function Dashboard() {
   const activeDownloads = downloads.filter((d) => d.status === 0 || d.status === 1)
   const recentVideos = videos.slice(0, 6)
 
+  // Construct webhook URL from current hostname
+  const webhookUrl = webhookConfig
+    ? `http://${window.location.hostname}:${webhookConfig.port}/hooks/download`
+    : null
+
   return (
     <div className="p-6 space-y-8">
       {/* Header */}
@@ -184,11 +189,11 @@ export function Dashboard() {
                       <div>
                         <div className="flex items-center justify-between text-[var(--text-secondary)] mb-1">
                           <span>URL</span>
-                          <button onClick={() => webhookConfig && copyToClipboard(webhookConfig.url, 'ios-url')} className="text-[var(--accent)] hover:underline">
+                          <button onClick={() => webhookUrl && copyToClipboard(webhookUrl, 'ios-url')} className="text-[var(--accent)] hover:underline">
                             {copiedField === 'ios-url' ? 'Copie!' : 'Copier'}
                           </button>
                         </div>
-                        <p className="text-[var(--accent)] break-all">{webhookConfig?.url || 'chargement...'}</p>
+                        <p className="text-[var(--accent)] break-all">{webhookUrl || 'chargement...'}</p>
                       </div>
                       <p><span className="text-[var(--text-secondary)]">Methode :</span> <span className="text-white">POST</span></p>
                       <p><span className="text-[var(--text-secondary)]">Corps :</span> <span className="text-white">{"{"}"url": "[Entree]"{"}"}</span></p>
@@ -244,11 +249,11 @@ export function Dashboard() {
                       <div>
                         <div className="flex items-center justify-between text-[var(--text-secondary)] mb-1">
                           <span>URL</span>
-                          <button onClick={() => webhookConfig && copyToClipboard(webhookConfig.url, 'android-url')} className="text-[var(--accent)] hover:underline">
+                          <button onClick={() => webhookUrl && copyToClipboard(webhookUrl, 'android-url')} className="text-[var(--accent)] hover:underline">
                             {copiedField === 'android-url' ? 'Copie!' : 'Copier'}
                           </button>
                         </div>
-                        <p className="text-[var(--accent)] break-all">{webhookConfig?.url || 'chargement...'}</p>
+                        <p className="text-[var(--accent)] break-all">{webhookUrl || 'chargement...'}</p>
                       </div>
                       <p><span className="text-[var(--text-secondary)]">Methode :</span> <span className="text-white">POST</span></p>
                       <p><span className="text-[var(--text-secondary)]">Corps :</span> <span className="text-white">{"{"}"url": "{"{"}url{"}"}"{"}"}</span></p>
