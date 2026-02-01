@@ -334,15 +334,15 @@
 ## Phase 12 : Notifications Push (Ntfy)
 
 ### 12.1 Backend
-- [ ] Ajouter settings pour Ntfy (topic, enabled)
-- [ ] Envoyer notification a la fin d'un telechargement (succes/echec)
-- [ ] Inclure titre de la video dans la notification
+- [x] Ajouter settings pour Ntfy (topic, enabled)
+- [x] Envoyer notification a la fin d'un telechargement (succes/echec)
+- [x] Inclure titre de la video dans la notification
 
 ### 12.2 Frontend
-- [ ] Section Notifications dans Parametres
-- [ ] Toggle activer/desactiver
-- [ ] Champ topic Ntfy
-- [ ] Bouton tester la notification
+- [x] Section Notifications dans Parametres
+- [x] Toggle activer/desactiver
+- [x] Champ topic Ntfy
+- [x] Bouton tester la notification
 
 ---
 

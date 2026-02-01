@@ -204,6 +204,79 @@ public static class StatsEndpoints
             return Results.Ok(new { data = new { token = request.Token } });
         });
 
+        // GET /api/ntfy - Ntfy configuration
+        app.MapGet("/api/ntfy", async (AppDbContext db) =>
+        {
+            var enabled = await db.Settings.FindAsync("ntfy.enabled");
+            var topic = await db.Settings.FindAsync("ntfy.topic");
+
+            return Results.Ok(new
+            {
+                data = new
+                {
+                    enabled = enabled?.Value == "true",
+                    topic = topic?.Value ?? ""
+                }
+            });
+        });
+
+        // PUT /api/ntfy - Update ntfy settings
+        app.MapPut("/api/ntfy", async (NtfyUpdateRequest request, AppDbContext db) =>
+        {
+            var enabled = await db.Settings.FindAsync("ntfy.enabled");
+            var topic = await db.Settings.FindAsync("ntfy.topic");
+
+            if (enabled is not null)
+                enabled.Value = request.Enabled.ToString().ToLower();
+            else
+                db.Settings.Add(new Setting { Key = "ntfy.enabled", Value = request.Enabled.ToString().ToLower() });
+
+            if (topic is not null)
+                topic.Value = request.Topic ?? "";
+            else
+                db.Settings.Add(new Setting { Key = "ntfy.topic", Value = request.Topic ?? "" });
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new
+            {
+                data = new
+                {
+                    enabled = request.Enabled,
+                    topic = request.Topic ?? ""
+                }
+            });
+        });
+
+        // POST /api/ntfy/test - Send test notification
+        app.MapPost("/api/ntfy/test", async (AppDbContext db, HttpClient httpClient) =>
+        {
+            var enabled = await db.Settings.FindAsync("ntfy.enabled");
+            var topic = await db.Settings.FindAsync("ntfy.topic");
+
+            if (enabled?.Value != "true" || string.IsNullOrEmpty(topic?.Value))
+            {
+                return Results.BadRequest(new { error = "Ntfy not configured" });
+            }
+
+            try
+            {
+                var response = await httpClient.PostAsync(
+                    $"https://ntfy.sh/{topic.Value}",
+                    new StringContent("Test notification from SuperTube!")
+                );
+
+                if (response.IsSuccessStatusCode)
+                    return Results.Ok(new { success = true });
+                else
+                    return Results.BadRequest(new { error = "Failed to send notification" });
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
         // GET /api/storage - Storage info
         app.MapGet("/api/storage", () =>
         {
@@ -278,3 +351,4 @@ public static class StatsEndpoints
 public record WebhookUpdateRequest(bool RequireToken);
 public record TokenVerifyRequest(string Token);
 public record SetTokenRequest(string Token);
+public record NtfyUpdateRequest(bool Enabled, string? Topic);

@@ -7,16 +7,19 @@ public class DownloadBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IYtdlpService _ytdlpService;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<DownloadBackgroundService> _logger;
     private readonly Dictionary<string, CancellationTokenSource> _activeDownloads = new();
 
     public DownloadBackgroundService(
         IServiceScopeFactory scopeFactory,
         IYtdlpService ytdlpService,
+        IHttpClientFactory httpClientFactory,
         ILogger<DownloadBackgroundService> logger)
     {
         _scopeFactory = scopeFactory;
         _ytdlpService = ytdlpService;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
@@ -146,11 +149,19 @@ public class DownloadBackgroundService : BackgroundService
                 {
                     await CreateVideoEntryAsync(db, finalStatus.Result, videoInfo?.Duration, download.Url, cts.Token);
                 }
+
+                // Send notification
+                var title = finalStatus.Result?.Title ?? download.Title ?? "Video";
+                await SendNotificationAsync(db, $"Telechargement termine : {title}");
             }
             else
             {
                 download.Status = DownloadStatus.Failed;
                 download.Error = finalStatus.Error ?? "Download failed";
+
+                // Send failure notification
+                var title = download.Title ?? "Video";
+                await SendNotificationAsync(db, $"Echec du telechargement : {title}");
             }
 
             await db.SaveChangesAsync(cts.Token);
@@ -249,6 +260,26 @@ public class DownloadBackgroundService : BackgroundService
         if (_activeDownloads.TryGetValue(downloadId, out var cts))
         {
             cts.Cancel();
+        }
+    }
+
+    private async Task SendNotificationAsync(AppDbContext db, string message)
+    {
+        try
+        {
+            var enabled = await db.Settings.FindAsync("ntfy.enabled");
+            var topic = await db.Settings.FindAsync("ntfy.topic");
+
+            if (enabled?.Value != "true" || string.IsNullOrEmpty(topic?.Value))
+                return;
+
+            var client = _httpClientFactory.CreateClient();
+            await client.PostAsync($"https://ntfy.sh/{topic.Value}", new StringContent(message));
+            _logger.LogInformation("Notification sent: {Message}", message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send notification");
         }
     }
 }

@@ -24,6 +24,9 @@ builder.Services.AddHttpClient<IYtdlpService, YtdlpService>(client =>
     client.Timeout = TimeSpan.FromMinutes(5);
 });
 
+// HttpClient for Ntfy notifications
+builder.Services.AddHttpClient();
+
 // Background service for processing downloads
 builder.Services.AddSingleton<DownloadBackgroundService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<DownloadBackgroundService>());

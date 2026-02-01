@@ -89,6 +89,11 @@ export interface WebhookConfig {
   port: string
 }
 
+export interface NtfyConfig {
+  enabled: boolean
+  topic: string
+}
+
 // Channel (derived from videos)
 export interface Channel {
   name: string

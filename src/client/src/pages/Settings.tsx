@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useStore } from '../store'
 import { Button, Select, Toggle } from '../components'
-import { getWebhookConfig, updateWebhookConfig, regenerateWebhookToken, setWebhookToken } from '../api'
-import type { WebhookConfig } from '../types'
+import { getWebhookConfig, updateWebhookConfig, regenerateWebhookToken, setWebhookToken, getNtfyConfig, updateNtfyConfig, testNtfyNotification } from '../api'
+import type { WebhookConfig, NtfyConfig } from '../types'
 
 export function Settings() {
   const {
@@ -24,6 +24,11 @@ export function Settings() {
   const [showToken, setShowToken] = useState(false)
   const [tokenCopied, setTokenCopied] = useState(false)
 
+  const [ntfyConfig, setNtfyConfig] = useState<NtfyConfig | null>(null)
+  const [ntfyLoading, setNtfyLoading] = useState(false)
+  const [ntfyTopic, setNtfyTopic] = useState('')
+  const [ntfyTestSent, setNtfyTestSent] = useState(false)
+
   const [localSettings, setLocalSettings] = useState({
     quality: '1080',
     format: 'mp4',
@@ -41,6 +46,10 @@ export function Settings() {
     getWebhookConfig().then((config) => {
       setWebhookConfig(config)
       setTokenInput(config.token)
+    }).catch(() => {})
+    getNtfyConfig().then((config) => {
+      setNtfyConfig(config)
+      setNtfyTopic(config.topic)
     }).catch(() => {})
   }, [fetchSettings, fetchStorage])
 
@@ -114,6 +123,44 @@ export function Settings() {
       navigator.clipboard.writeText(webhookConfig.token)
       setTokenCopied(true)
       setTimeout(() => setTokenCopied(false), 2000)
+    }
+  }
+
+  const handleNtfyToggle = async (enabled: boolean) => {
+    setNtfyLoading(true)
+    try {
+      const updated = await updateNtfyConfig(enabled, ntfyTopic)
+      setNtfyConfig(updated)
+    } catch (error) {
+      console.error('Failed to update ntfy config:', error)
+    } finally {
+      setNtfyLoading(false)
+    }
+  }
+
+  const handleNtfySaveTopic = async () => {
+    if (!ntfyTopic.trim()) return
+    setNtfyLoading(true)
+    try {
+      const updated = await updateNtfyConfig(ntfyConfig?.enabled ?? false, ntfyTopic.trim())
+      setNtfyConfig(updated)
+    } catch (error) {
+      console.error('Failed to save ntfy topic:', error)
+    } finally {
+      setNtfyLoading(false)
+    }
+  }
+
+  const handleNtfyTest = async () => {
+    setNtfyLoading(true)
+    try {
+      await testNtfyNotification()
+      setNtfyTestSent(true)
+      setTimeout(() => setNtfyTestSent(false), 3000)
+    } catch (error) {
+      console.error('Failed to send test notification:', error)
+    } finally {
+      setNtfyLoading(false)
     }
   }
 
@@ -356,6 +403,76 @@ export function Settings() {
                     </svg>
                     Regenerer
                   </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="py-4 text-center">
+            <p className="text-[var(--text-secondary)]">Chargement...</p>
+          </div>
+        )}
+      </section>
+
+      {/* Notifications */}
+      <section className="bg-[var(--bg-secondary)] rounded-xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-white">Notifications</h2>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Recevez une notification sur votre telephone quand un telechargement est termine.
+        </p>
+        {ntfyConfig ? (
+          <div className="space-y-4">
+            <Toggle
+              label="Activer les notifications Ntfy"
+              description="Envoi une notification push via ntfy.sh"
+              checked={ntfyConfig.enabled}
+              onChange={handleNtfyToggle}
+              disabled={ntfyLoading}
+            />
+
+            {ntfyConfig.enabled && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-[var(--text-secondary)] mb-2">Topic Ntfy</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={ntfyTopic}
+                      onChange={(e) => setNtfyTopic(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-[var(--bg-tertiary)] rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                      placeholder="supertube-monnom"
+                    />
+                    <button
+                      onClick={handleNtfySaveTopic}
+                      disabled={ntfyLoading || ntfyTopic === ntfyConfig.topic}
+                      className="px-3 py-2 bg-[var(--accent)] text-white rounded-lg text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--text-secondary)] mt-2">
+                    Choisissez un nom unique. Dans l'app Ntfy, abonnez-vous a ce topic.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleNtfyTest}
+                  disabled={ntfyLoading || !ntfyConfig.topic}
+                  className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-[var(--bg-tertiary)] text-[var(--text-secondary)] rounded-lg text-sm hover:text-white transition-colors disabled:opacity-50"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  {ntfyTestSent ? 'Notification envoyee!' : 'Tester la notification'}
+                </button>
+
+                <div className="p-3 bg-[var(--bg-tertiary)] rounded-lg">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    <span className="font-medium text-white">Comment configurer :</span><br />
+                    1. Installez l'app <span className="text-[var(--accent)]">Ntfy</span> sur votre telephone<br />
+                    2. Abonnez-vous au topic : <span className="text-[var(--accent)]">{ntfyTopic || 'votre-topic'}</span><br />
+                    3. Vous recevrez une notification a chaque telechargement termine
+                  </p>
                 </div>
               </div>
             )}

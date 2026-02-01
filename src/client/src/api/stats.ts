@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Stats, DownloadStats, StorageInfo, WebhookConfig, ApiResponse } from '../types'
+import type { Stats, DownloadStats, StorageInfo, WebhookConfig, NtfyConfig, ApiResponse } from '../types'
 
 export async function getStats(): Promise<Stats> {
   const response = await api.get<ApiResponse<Stats>>('/api/stats')
@@ -34,4 +34,19 @@ export async function regenerateWebhookToken(): Promise<{ token: string }> {
 export async function setWebhookToken(token: string): Promise<{ token: string }> {
   const response = await api.put<ApiResponse<{ token: string }>>('/api/webhook/token', { token })
   return response.data
+}
+
+export async function getNtfyConfig(): Promise<NtfyConfig> {
+  const response = await api.get<ApiResponse<NtfyConfig>>('/api/ntfy')
+  return response.data
+}
+
+export async function updateNtfyConfig(enabled: boolean, topic: string): Promise<NtfyConfig> {
+  const response = await api.put<ApiResponse<NtfyConfig>>('/api/ntfy', { enabled, topic })
+  return response.data
+}
+
+export async function testNtfyNotification(): Promise<{ success: boolean }> {
+  const response = await api.post<{ success: boolean }>('/api/ntfy/test', {})
+  return response
 }
