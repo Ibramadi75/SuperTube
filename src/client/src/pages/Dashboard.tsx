@@ -22,6 +22,7 @@ export function Dashboard() {
 
   const navigate = useNavigate()
   const [showManualDownload, setShowManualDownload] = useState(false)
+  const [showMobileTutorial, setShowMobileTutorial] = useState(false)
   const [webhookConfig, setWebhookConfig] = useState<WebhookConfig | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
@@ -128,10 +129,32 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Mobile Tutorials */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* iOS Shortcut Tutorial */}
-        <div className="bg-[var(--bg-secondary)] rounded-xl p-6">
+      {/* Mobile Tutorials - Collapsible */}
+      <div className="bg-[var(--bg-secondary)] rounded-xl overflow-hidden">
+        <button
+          onClick={() => setShowMobileTutorial(!showMobileTutorial)}
+          className="w-full p-4 flex items-center justify-between text-left hover:bg-[var(--bg-tertiary)] transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <span className="text-[var(--text-secondary)]">Telecharger depuis mon telephone</span>
+          </div>
+          <svg
+            className={`w-5 h-5 text-[var(--text-secondary)] transition-transform ${showMobileTutorial ? 'rotate-180' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {showMobileTutorial && (
+          <div className="p-4 pt-0 border-t border-[var(--bg-tertiary)]">
+            <div className="grid md:grid-cols-2 gap-6 pt-4">
+              {/* iOS Shortcut Tutorial */}
+              <div className="bg-[var(--bg-tertiary)] rounded-xl p-6">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-[var(--bg-tertiary)] rounded-xl">
               <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -206,11 +229,11 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Android Tutorial */}
-        <div className="bg-[var(--bg-secondary)] rounded-xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-[var(--bg-tertiary)] rounded-xl">
-              <svg className="w-8 h-8 text-[#3DDC84]" viewBox="0 0 24 24" fill="currentColor">
+              {/* Android Tutorial */}
+              <div className="bg-[var(--bg-tertiary)] rounded-xl p-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-[var(--bg-primary)] rounded-xl">
+                    <svg className="w-8 h-8 text-[#3DDC84]" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24c-1.35-.63-2.85-1-4.47-1s-3.12.37-4.47 1L5.65 5.67c-.19-.29-.58-.38-.87-.2-.28.18-.37.54-.22.83L6.4 9.48C3.3 11.25 1.28 14.44 1 18h22c-.28-3.56-2.3-6.75-5.4-8.52zM7 15.25c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25zm10 0c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25z"/>
               </svg>
             </div>
@@ -281,6 +304,9 @@ export function Dashboard() {
             </div>
           </div>
         </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Manual Download - Collapsible */}
