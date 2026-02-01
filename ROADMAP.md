@@ -1,7 +1,7 @@
 # SuperTube - Roadmap de Developpement
 
-> Derniere mise a jour : 2026-01-31
-> Status global : **Phase 8 - COMPLETE ✅** (Frontend fonctionnel)
+> Derniere mise a jour : 2026-02-01
+> Status global : **Phase 8 - COMPLETE ✅** (Frontend fonctionnel + Webhook mobile)
 
 ---
 
@@ -106,7 +106,15 @@
 - [x] `GET /api/storage` - Espace disque utilise/libre
 - [x] Tester chaque endpoint
 
-### 3.7 Gestion des erreurs
+### 3.7 Endpoint Webhook (`/api/webhook`)
+- [x] `GET /api/webhook` - Configuration webhook (URL, token, requiresToken)
+- [x] `PUT /api/webhook` - Activer/desactiver l'exigence de token
+- [x] `POST /api/webhook/verify` - Verifier un token (pour le conteneur webhook)
+- [x] `POST /api/webhook/regenerate` - Regenerer un token aleatoire
+- [x] `PUT /api/webhook/token` - Definir un token manuellement
+- [x] Tester chaque endpoint
+
+### 3.8 Gestion des erreurs
 - [x] Creer un middleware pour les erreurs globales
 - [x] Retourner le format d'erreur standard (`{ error: { code, message } }`)
 - [x] Logger les erreurs dans la console
@@ -178,6 +186,8 @@
 - [x] Afficher les 6 dernieres videos telechargees
 - [x] Ajouter le formulaire de telechargement rapide (URL)
 - [x] Bouton "Voir tout" vers la bibliotheque
+- [x] Tutoriels mobiles (iOS Shortcuts, Android HTTP Shortcuts) dans un pliant
+- [x] Copie URL et token webhook depuis les tutoriels
 
 ### 6.2 Bibliotheque (`/library`)
 - [x] Sidebar avec la liste des chaines
@@ -199,7 +209,9 @@
 - [x] Section Performance : selecteur fragments (1-16)
 - [x] Section SponsorBlock : toggle on/off, action mark/remove
 - [x] Section Stockage : affichage espace utilise/libre (lecture seule)
+- [x] Section Webhook Token : toggle exigence token, saisie manuelle, regeneration, copie
 - [x] Bouton Sauvegarder
+- [x] Navigation par hash (#webhook-token) depuis le Dashboard
 
 ### 6.5 Lecteur Video
 - [x] Modal avec lecteur HTML5
@@ -356,5 +368,13 @@ _Utilise cette section pour noter ou tu en es quand tu t'arretes :_
 - Composants UI: Button, Input, Select, Toggle, Modal, Toast, ProgressBar
 - Composants metier: VideoCard, VideoPlayer, DownloadForm, DownloadProgress
 - Theme sombre YouTube, responsive, toasts de notification
+
+**2026-02-01** : Integration Webhook pour telechargement mobile:
+- Conteneur webhook (adnanh/webhook) avec verification token dynamique
+- Endpoints API pour gestion token (GET/PUT/POST /api/webhook/*)
+- Token stocke en BDD (pas de restart conteneur necessaire)
+- Tutoriels iOS Shortcuts et Android HTTP Shortcuts dans Dashboard
+- Gestion token dans Parametres (toggle, saisie manuelle, regeneration)
+- Teste avec succes sur iPhone
 
 ---
