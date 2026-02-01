@@ -175,13 +175,12 @@ export function Dashboard() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[var(--text-secondary)]">Header :</span>
                         <span className="text-white">X-Webhook-Token:</span>
-                        <button
-                          onClick={() => copyToClipboard(webhookConfig.token, 'ios-token')}
-                          className="text-green-400 hover:underline cursor-pointer flex items-center gap-1"
-                        >
-                          {webhookConfig.token}
-                          {copiedField === 'ios-token' && <span className="text-[10px] ml-1">copie!</span>}
-                        </button>
+                        <TokenField
+                          token={webhookConfig.token}
+                          fieldId="ios-token"
+                          copiedField={copiedField}
+                          onCopy={copyToClipboard}
+                        />
                       </div>
                     )}
                   </div>
@@ -242,13 +241,12 @@ export function Dashboard() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[var(--text-secondary)]">Header :</span>
                         <span className="text-white">X-Webhook-Token:</span>
-                        <button
-                          onClick={() => copyToClipboard(webhookConfig.token, 'android-token')}
-                          className="text-green-400 hover:underline cursor-pointer flex items-center gap-1"
-                        >
-                          {webhookConfig.token}
-                          {copiedField === 'android-token' && <span className="text-[10px] ml-1">copie!</span>}
-                        </button>
+                        <TokenField
+                          token={webhookConfig.token}
+                          fieldId="android-token"
+                          copiedField={copiedField}
+                          onCopy={copyToClipboard}
+                        />
                       </div>
                     )}
                   </div>
@@ -381,5 +379,42 @@ function TutorialStep({
         {children}
       </div>
     </div>
+  )
+}
+
+function TokenField({
+  token,
+  fieldId,
+  copiedField,
+  onCopy
+}: {
+  token: string
+  fieldId: string
+  copiedField: string | null
+  onCopy: (text: string, field: string) => void
+}) {
+  const masked = '•'.repeat(Math.min(token.length, 24))
+  const isCopied = copiedField === fieldId
+
+  return (
+    <button
+      onClick={() => onCopy(token, fieldId)}
+      className="group relative text-green-400 cursor-pointer flex items-center gap-1"
+      title="Cliquer pour copier"
+    >
+      <span className="group-hover:hidden">{masked}</span>
+      <span className="hidden group-hover:inline text-green-300">{token}</span>
+      {isCopied && (
+        <span className="text-[10px] text-green-300 ml-1">copie!</span>
+      )}
+      <svg
+        className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      </svg>
+    </button>
   )
 }
