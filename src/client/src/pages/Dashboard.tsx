@@ -193,22 +193,19 @@ export function Dashboard() {
                       <p><span className="text-[var(--text-secondary)]">Methode :</span> <span className="text-white">POST</span></p>
                       <p><span className="text-[var(--text-secondary)]">Corps :</span> <span className="text-white">{"{"}"url": "[Entree]"{"}"}</span></p>
                       {webhookConfig?.requiresToken && (
-                        <div className="pt-2 border-t border-[var(--bg-tertiary)]">
-                          <div className="flex items-center justify-between text-[var(--text-secondary)] mb-1">
-                            <span>X-Webhook-Token</span>
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => copyToClipboard(webhookConfig.token, 'ios-token')} className="text-[var(--accent)] hover:underline">
-                                {copiedField === 'ios-token' ? 'Copie!' : 'Copier'}
-                              </button>
-                              <button onClick={() => navigate('/settings#webhook-token')} className="text-[var(--text-secondary)] hover:text-white" title="Configurer">
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                              </button>
-                            </div>
+                        <div className="pt-2 border-t border-[var(--bg-tertiary)] flex items-center justify-between">
+                          <span className="text-[var(--text-secondary)]">X-Webhook-Token</span>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => copyToClipboard(webhookConfig.token, 'ios-token')} className="text-[var(--accent)] hover:underline">
+                              {copiedField === 'ios-token' ? 'Copie!' : 'Copier'}
+                            </button>
+                            <button onClick={() => navigate('/settings#webhook-token')} className="text-[var(--text-secondary)] hover:text-white" title="Configurer">
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </button>
                           </div>
-                          <p className="text-green-400 break-all">{webhookConfig.token}</p>
                         </div>
                       )}
                     </div>
@@ -256,22 +253,19 @@ export function Dashboard() {
                       <p><span className="text-[var(--text-secondary)]">Methode :</span> <span className="text-white">POST</span></p>
                       <p><span className="text-[var(--text-secondary)]">Corps :</span> <span className="text-white">{"{"}"url": "{"{"}url{"}"}"{"}"}</span></p>
                       {webhookConfig?.requiresToken && (
-                        <div className="pt-2 border-t border-[var(--bg-tertiary)]">
-                          <div className="flex items-center justify-between text-[var(--text-secondary)] mb-1">
-                            <span>X-Webhook-Token</span>
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => copyToClipboard(webhookConfig.token, 'android-token')} className="text-[var(--accent)] hover:underline">
-                                {copiedField === 'android-token' ? 'Copie!' : 'Copier'}
-                              </button>
-                              <button onClick={() => navigate('/settings#webhook-token')} className="text-[var(--text-secondary)] hover:text-white" title="Configurer">
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                              </button>
-                            </div>
+                        <div className="pt-2 border-t border-[var(--bg-tertiary)] flex items-center justify-between">
+                          <span className="text-[var(--text-secondary)]">X-Webhook-Token</span>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => copyToClipboard(webhookConfig.token, 'android-token')} className="text-[var(--accent)] hover:underline">
+                              {copiedField === 'android-token' ? 'Copie!' : 'Copier'}
+                            </button>
+                            <button onClick={() => navigate('/settings#webhook-token')} className="text-[var(--text-secondary)] hover:text-white" title="Configurer">
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </button>
                           </div>
-                          <p className="text-green-400 break-all">{webhookConfig.token}</p>
                         </div>
                       )}
                     </div>
