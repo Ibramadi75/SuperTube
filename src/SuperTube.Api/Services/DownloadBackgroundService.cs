@@ -51,7 +51,6 @@ public class DownloadBackgroundService : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        // Get next pending download
         var nextDownload = await db.Downloads
             .Where(d => d.Status == DownloadStatus.Pending)
             .OrderBy(d => d.StartedAt)
@@ -78,10 +77,8 @@ public class DownloadBackgroundService : BackgroundService
 
             _logger.LogInformation("Starting download {DownloadId} for {Url}", downloadId, download.Url);
 
-            // Get settings
             var settings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value, cts.Token);
 
-            // Build request
             var request = new YtdlpDownloadRequest
             {
                 Url = download.Url,
@@ -93,19 +90,15 @@ public class DownloadBackgroundService : BackgroundService
                 DownloadThumbnail = bool.Parse(settings.GetValueOrDefault("download_thumbnail", "true")),
             };
 
-            // Start download on ytdlp-api
             var response = await _ytdlpService.StartDownloadAsync(request);
             var ytdlpId = response.Id;
 
-            // Update status
             download.Status = DownloadStatus.Downloading;
             download.YtdlpId = ytdlpId;
             await db.SaveChangesAsync(cts.Token);
 
-            // Send start notification
             await SendNotificationAsync(db, download.Url, status: "started");
 
-            // Stream progress
             var startTime = DateTime.UtcNow;
 
             await foreach (var progress in _ytdlpService.StreamProgressAsync(ytdlpId, cts.Token))
@@ -116,7 +109,6 @@ public class DownloadBackgroundService : BackgroundService
                 download.FragmentIndex = progress.FragmentIndex;
                 download.FragmentCount = progress.FragmentCount;
 
-                // Calculate speed in bytes
                 if (progress.Speed != null)
                 {
                     download.AvgSpeedBytes = ParseSpeedToBytes(progress.Speed);
@@ -130,7 +122,6 @@ public class DownloadBackgroundService : BackgroundService
                 }
             }
 
-            // Get final status
             var finalStatus = await _ytdlpService.GetDownloadStatusAsync(ytdlpId);
             if (finalStatus == null)
             {
@@ -144,16 +135,13 @@ public class DownloadBackgroundService : BackgroundService
                 download.CompletedAt = DateTime.UtcNow;
                 download.DurationSeconds = (int)(DateTime.UtcNow - startTime).TotalSeconds;
 
-                // Get video info for duration
                 var videoInfo = await _ytdlpService.GetVideoInfoAsync(download.Url);
 
-                // Create video entry
                 if (finalStatus.Result != null)
                 {
                     await CreateVideoEntryAsync(db, finalStatus.Result, videoInfo?.Duration, download.Url, cts.Token);
                 }
 
-                // Send notification
                 var title = finalStatus.Result?.Title ?? download.Title ?? "Video";
                 await SendNotificationAsync(db, title, status: "success");
             }
@@ -162,7 +150,6 @@ public class DownloadBackgroundService : BackgroundService
                 download.Status = DownloadStatus.Failed;
                 download.Error = finalStatus.Error ?? "Download failed";
 
-                // Send failure notification
                 var title = download.Title ?? "Video";
                 await SendNotificationAsync(db, title, status: "failed");
             }
@@ -210,14 +197,11 @@ public class DownloadBackgroundService : BackgroundService
         if (string.IsNullOrEmpty(result.VideoId) || string.IsNullOrEmpty(result.Filepath))
             return;
 
-        // Check if video already exists
         var existing = await db.Videos.FindAsync(result.VideoId);
         if (existing != null) return;
 
         var filepath = result.Filepath;
         var fileInfo = new FileInfo(filepath);
-
-        // Build thumbnail path
         var thumbnailPath = filepath.Replace($".{result.Ext}", "-thumb.jpg");
 
         var video = new Video

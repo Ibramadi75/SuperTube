@@ -101,7 +101,6 @@ public static class StatsEndpoints
             var tokenEnabled = await db.Settings.FindAsync("webhook.tokenEnabled");
             var tokenValue = await db.Settings.FindAsync("webhook.token");
 
-            // Update or create tokenEnabled setting
             if (tokenEnabled is not null)
             {
                 tokenEnabled.Value = request.RequireToken.ToString().ToLower();
@@ -127,7 +126,6 @@ public static class StatsEndpoints
 
             await db.SaveChangesAsync();
 
-            // Return updated config
             var webhookPort = Environment.GetEnvironmentVariable("WEBHOOK_PORT") ?? "9001";
             var finalToken = request.RequireToken ? (await db.Settings.FindAsync("webhook.token"))?.Value ?? "" : "";
 
@@ -155,7 +153,6 @@ public static class StatsEndpoints
                 return Results.Ok(new { valid = true });
             }
 
-            // Check token matches
             var isValid = !string.IsNullOrEmpty(request.Token) && request.Token == tokenValue?.Value;
             return Results.Ok(new { valid = isValid });
         });

@@ -54,7 +54,6 @@ public static class ChannelEndpoints
             if (!videos.Any())
                 return Results.NotFound(new { error = new { code = "CHANNEL_NOT_FOUND", message = $"Channel '{decodedName}' not found" } });
 
-            // Delete files
             foreach (var video in videos)
             {
                 if (File.Exists(video.Filepath))

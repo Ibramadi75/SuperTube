@@ -43,7 +43,6 @@ public static class VideoEndpoints
             if (video is null)
                 return Results.NotFound(new { error = new { code = "VIDEO_NOT_FOUND", message = $"Video '{id}' not found" } });
 
-            // Delete files if they exist
             if (File.Exists(video.Filepath))
                 File.Delete(video.Filepath);
             if (video.ThumbnailPath is not null && File.Exists(video.ThumbnailPath))

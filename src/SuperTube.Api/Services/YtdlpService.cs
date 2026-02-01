@@ -105,7 +105,6 @@ public class YtdlpService : IYtdlpService
             }
             else if (string.IsNullOrEmpty(line) && data != null)
             {
-                // End of event
                 var progressEvent = JsonSerializer.Deserialize<YtdlpProgressEvent>(data);
                 if (progressEvent != null)
                 {

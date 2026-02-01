@@ -14,7 +14,6 @@ public static class SettingsEndpoints
         {
             var settings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value);
 
-            // Structure settings into groups
             var structured = new
             {
                 quality = new
@@ -50,7 +49,6 @@ public static class SettingsEndpoints
         {
             var updates = new Dictionary<string, string>();
 
-            // Flatten the request into key-value pairs
             if (request.Quality?.Default is not null)
                 updates["quality.default"] = request.Quality.Default;
 
@@ -77,7 +75,6 @@ public static class SettingsEndpoints
             if (request.Sponsorblock?.Categories is not null)
                 updates["sponsorblock.categories"] = string.Join(",", request.Sponsorblock.Categories);
 
-            // Apply updates
             foreach (var (key, value) in updates)
             {
                 var setting = await db.Settings.FindAsync(key);

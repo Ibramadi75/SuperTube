@@ -36,7 +36,6 @@ public static class DownloadEndpoints
         // POST /api/downloads - Start a new download
         group.MapPost("/", async (DownloadRequest request, AppDbContext db) =>
         {
-            // Validate URL
             if (string.IsNullOrWhiteSpace(request.Url))
                 return Results.BadRequest(new { error = new { code = "INVALID_URL", message = "URL is required" } });
 
@@ -72,10 +71,8 @@ public static class DownloadEndpoints
             if (download.Status == DownloadStatus.Completed)
                 return Results.BadRequest(new { error = new { code = "ALREADY_COMPLETED", message = "Cannot cancel a completed download" } });
 
-            // Cancel via background service
             backgroundService.CancelDownload(id);
 
-            // Also cancel on ytdlp-api if we have an ID
             if (!string.IsNullOrEmpty(download.YtdlpId))
             {
                 try
@@ -118,10 +115,8 @@ public static class DownloadEndpoints
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    // Refresh from database
                     await db.Entry(download).ReloadAsync(ct);
 
-                    // Only send if changed
                     if (download.Progress != lastProgress || download.Status.ToString() != lastStatus)
                     {
                         lastProgress = download.Progress;
@@ -142,7 +137,6 @@ public static class DownloadEndpoints
                         await httpContext.Response.Body.FlushAsync(ct);
                     }
 
-                    // Stop if download finished
                     if (download.Status is DownloadStatus.Completed or DownloadStatus.Failed)
                     {
                         var finalData = System.Text.Json.JsonSerializer.Serialize(new
