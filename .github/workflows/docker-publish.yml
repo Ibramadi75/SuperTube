@@ -1,0 +1,102 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+  SUPERTUBE_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/supertube
+  YTDLP_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/supertube-ytdlp
+  WEBHOOK_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/supertube-webhook
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for supertube
+        id: meta-supertube
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.SUPERTUBE_IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=sha,prefix=
+
+      - name: Extract metadata for ytdlp
+        id: meta-ytdlp
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.YTDLP_IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=sha,prefix=
+
+      - name: Extract metadata for webhook
+        id: meta-webhook
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.WEBHOOK_IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=sha,prefix=
+
+      - name: Build and push supertube
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta-supertube.outputs.tags }}
+          labels: ${{ steps.meta-supertube.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push ytdlp-api
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src/ytdlp-api
+          file: ./src/ytdlp-api/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta-ytdlp.outputs.tags }}
+          labels: ${{ steps.meta-ytdlp.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push webhook
+        uses: docker/build-push-action@v5
+        with:
+          context: ./webhook
+          file: ./webhook/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta-webhook.outputs.tags }}
+          labels: ${{ steps.meta-webhook.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

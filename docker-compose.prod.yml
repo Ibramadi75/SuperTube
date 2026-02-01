@@ -1,0 +1,61 @@
+# SuperTube - Production Deployment
+# Usage: docker compose -f docker-compose.prod.yml up -d
+#
+# Before running, create a .env file with:
+#   DOCKERHUB_USERNAME=your_username
+#   WEBHOOK_HOST=your_server_ip_or_domain
+#   WEBHOOK_PORT=9001 (optional, default 9001)
+
+services:
+  supertube:
+    image: ${DOCKERHUB_USERNAME:-ibramadi75}/supertube:latest
+    container_name: supertube
+    ports:
+      - "8080:80"
+    volumes:
+      - supertube-data:/data
+      - supertube-videos:/youtube
+    environment:
+      - TZ=Europe/Paris
+      - YTDLP_API_URL=http://ytdlp-api:3001
+      - WEBHOOK_HOST=${WEBHOOK_HOST:-localhost}
+      - WEBHOOK_PORT=${WEBHOOK_PORT:-9001}
+    depends_on:
+      - ytdlp-api
+    restart: unless-stopped
+    networks:
+      - supertube-net
+
+  ytdlp-api:
+    image: ${DOCKERHUB_USERNAME:-ibramadi75}/supertube-ytdlp:latest
+    container_name: ytdlp-api
+    volumes:
+      - supertube-videos:/youtube
+    environment:
+      - TZ=Europe/Paris
+      - YOUTUBE_PATH=/youtube
+    restart: unless-stopped
+    networks:
+      - supertube-net
+
+  webhook:
+    image: ${DOCKERHUB_USERNAME:-ibramadi75}/supertube-webhook:latest
+    container_name: supertube-webhook
+    ports:
+      - "${WEBHOOK_PORT:-9001}:9000"
+    environment:
+      - TZ=Europe/Paris
+      - API_URL=http://supertube:80
+    depends_on:
+      - supertube
+    restart: unless-stopped
+    networks:
+      - supertube-net
+
+volumes:
+  supertube-data:
+  supertube-videos:
+
+networks:
+  supertube-net:
+    driver: bridge
