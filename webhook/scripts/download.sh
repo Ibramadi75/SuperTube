@@ -2,13 +2,16 @@
 URL="$1"
 TOKEN="$2"
 
+# Use API_URL env var or default to production URL
+API_BASE="${API_URL:-http://supertube:80}"
+
 if [ -z "$URL" ]; then
   echo '{"error": "URL is required"}'
   exit 1
 fi
 
 # Verify token via API
-VERIFY_RESULT=$(curl -s -X POST "http://supertube:80/api/webhook/verify" \
+VERIFY_RESULT=$(curl -s -X POST "${API_BASE}/api/webhook/verify" \
   -H "Content-Type: application/json" \
   -d "{\"token\": \"$TOKEN\"}")
 
@@ -21,6 +24,6 @@ if [ -z "$IS_VALID" ]; then
 fi
 
 # Call SuperTube API to start download
-curl -s -X POST "http://supertube:80/api/downloads" \
+curl -s -X POST "${API_BASE}/api/downloads" \
   -H "Content-Type: application/json" \
   -d "{\"url\": \"$URL\"}"
