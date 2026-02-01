@@ -237,10 +237,16 @@ export function Settings() {
             </p>
           </div>
         ) : (
-          <div className="text-center py-4">
-            <p className="text-[var(--text-secondary)] mb-2">Webhook non configure</p>
+          <div className="py-4 space-y-3">
+            <p className="text-[var(--text-secondary)]">Webhook non configure</p>
             <p className="text-sm text-[var(--text-secondary)]">
-              Lancez avec <code className="bg-[var(--bg-tertiary)] px-2 py-0.5 rounded">WEBHOOK_TOKEN=... docker compose -f docker-compose.webhook.yml up</code>
+              Pour activer les raccourcis mobile, relancez avec un token de votre choix :
+            </p>
+            <code className="block bg-[var(--bg-tertiary)] px-3 py-2 rounded-lg text-sm text-[var(--accent)] break-all">
+              WEBHOOK_TOKEN=VotreMotDePasseSecret docker compose -f docker-compose.webhook.yml up -d
+            </code>
+            <p className="text-xs text-[var(--text-secondary)]">
+              Le token est un secret que vous inventez. Il protege l'acces au webhook.
             </p>
           </div>
         )}
