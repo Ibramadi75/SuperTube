@@ -72,6 +72,24 @@ public static class StatsEndpoints
             });
         });
 
+        // GET /api/webhook - Webhook configuration
+        app.MapGet("/api/webhook", () =>
+        {
+            var token = Environment.GetEnvironmentVariable("WEBHOOK_TOKEN");
+            var webhookHost = Environment.GetEnvironmentVariable("WEBHOOK_HOST") ?? "VOTRE_IP";
+            var webhookPort = Environment.GetEnvironmentVariable("WEBHOOK_PORT") ?? "9001";
+
+            return Results.Ok(new
+            {
+                data = new
+                {
+                    enabled = !string.IsNullOrEmpty(token),
+                    token = token ?? "",
+                    url = $"http://{webhookHost}:{webhookPort}/hooks/download"
+                }
+            });
+        });
+
         // GET /api/storage - Storage info
         app.MapGet("/api/storage", () =>
         {

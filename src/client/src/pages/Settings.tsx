@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { Button, Select, Toggle } from '../components'
+import { getWebhookConfig } from '../api'
+import type { WebhookConfig } from '../types'
 
 export function Settings() {
   const {
@@ -11,6 +13,8 @@ export function Settings() {
     storage,
     fetchStorage,
   } = useStore()
+
+  const [webhookConfig, setWebhookConfig] = useState<WebhookConfig | null>(null)
 
   const [localSettings, setLocalSettings] = useState({
     quality: '1080',
@@ -26,6 +30,7 @@ export function Settings() {
   useEffect(() => {
     fetchSettings()
     fetchStorage()
+    getWebhookConfig().then(setWebhookConfig).catch(() => {})
   }, [fetchSettings, fetchStorage])
 
   useEffect(() => {
@@ -187,6 +192,59 @@ export function Settings() {
           </div>
         </section>
       )}
+
+      {/* Webhook */}
+      <section className="bg-[var(--bg-secondary)] rounded-xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-white">Webhook (Raccourcis mobile)</h2>
+        {webhookConfig?.enabled ? (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1">URL du webhook</label>
+              <div className="flex gap-2">
+                <code className="flex-1 bg-[var(--bg-tertiary)] px-3 py-2 rounded-lg text-sm text-[var(--accent)] break-all">
+                  {webhookConfig.url}
+                </code>
+                <button
+                  onClick={() => navigator.clipboard.writeText(webhookConfig.url)}
+                  className="px-3 py-2 bg-[var(--bg-tertiary)] rounded-lg text-[var(--text-secondary)] hover:text-white transition-colors"
+                  title="Copier"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1">Token</label>
+              <div className="flex gap-2">
+                <code className="flex-1 bg-[var(--bg-tertiary)] px-3 py-2 rounded-lg text-sm text-green-400 font-mono">
+                  {webhookConfig.token}
+                </code>
+                <button
+                  onClick={() => navigator.clipboard.writeText(webhookConfig.token)}
+                  className="px-3 py-2 bg-[var(--bg-tertiary)] rounded-lg text-[var(--text-secondary)] hover:text-white transition-colors"
+                  title="Copier"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)]">
+              Utilisez ces informations pour configurer votre raccourci mobile (voir Dashboard).
+            </p>
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-[var(--text-secondary)] mb-2">Webhook non configure</p>
+            <p className="text-sm text-[var(--text-secondary)]">
+              Lancez avec <code className="bg-[var(--bg-tertiary)] px-2 py-0.5 rounded">WEBHOOK_TOKEN=... docker compose -f docker-compose.webhook.yml up</code>
+            </p>
+          </div>
+        )}
+      </section>
 
       {/* Save button */}
       <div className="flex justify-end">

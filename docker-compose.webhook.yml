@@ -12,6 +12,9 @@ services:
     environment:
       - TZ=Europe/Paris
       - YTDLP_API_URL=http://ytdlp-api:3001
+      - WEBHOOK_TOKEN=${WEBHOOK_TOKEN:-}
+      - WEBHOOK_HOST=${WEBHOOK_HOST:-}
+      - WEBHOOK_PORT=9001
     depends_on:
       - ytdlp-api
     restart: unless-stopped

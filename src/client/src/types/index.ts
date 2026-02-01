@@ -82,6 +82,12 @@ export interface StorageInfo {
   percentUsed: number
 }
 
+export interface WebhookConfig {
+  enabled: boolean
+  token: string
+  url: string
+}
+
 // Channel (derived from videos)
 export interface Channel {
   name: string

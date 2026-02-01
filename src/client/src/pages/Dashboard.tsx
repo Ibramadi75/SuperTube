@@ -147,7 +147,7 @@ export function Dashboard() {
                     <p><span className="text-[var(--text-secondary)]">URL :</span> <span className="text-[var(--accent)]">http://IP:9001/hooks/download</span></p>
                     <p><span className="text-[var(--text-secondary)]">Methode :</span> POST</p>
                     <p><span className="text-[var(--text-secondary)]">Corps :</span> {"{"}"url": "[Entree]"{"}"}</p>
-                    <p><span className="text-[var(--text-secondary)]">En-tete :</span> X-Webhook-Token: <span className="text-green-400">token</span></p>
+                    <p><span className="text-[var(--text-secondary)]">En-tete :</span> X-Webhook-Token: <span className="text-green-400">(Parametres)</span></p>
                   </div>
                 </TutorialStep>
                 <TutorialStep
@@ -189,7 +189,7 @@ export function Dashboard() {
                     <p><span className="text-[var(--text-secondary)]">URL :</span> <span className="text-[var(--accent)]">http://IP:9001/hooks/download</span></p>
                     <p><span className="text-[var(--text-secondary)]">Methode :</span> POST</p>
                     <p><span className="text-[var(--text-secondary)]">Corps :</span> {"{"}"url": "{"{"}url{"}"}"{"}"}</p>
-                    <p><span className="text-[var(--text-secondary)]">En-tete :</span> X-Webhook-Token: <span className="text-green-400">token</span></p>
+                    <p><span className="text-[var(--text-secondary)]">En-tete :</span> X-Webhook-Token: <span className="text-green-400">(Parametres)</span></p>
                   </div>
                 </TutorialStep>
                 <TutorialStep
