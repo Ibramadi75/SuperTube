@@ -70,7 +70,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Content */}
-      <main>{children}</main>
+      <main className="max-w-7xl mx-auto">{children}</main>
 
       {/* Toasts */}
       <Toasts />
