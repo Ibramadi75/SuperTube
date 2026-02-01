@@ -1,8 +1,5 @@
 # SuperTube - Production Deployment
 # Usage: docker compose -f docker-compose.prod.yml up -d
-#
-# Before running, create directories:
-#   mkdir -p ./config ./downloads
 
 services:
   supertube:
@@ -11,8 +8,8 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./config:/data
-      - ./downloads:/youtube
+      - ./supertube-data:/data
+      - ./supertube-videos:/youtube
     environment:
       - TZ=Europe/Paris
       - YTDLP_API_URL=http://ytdlp-api:3001
@@ -27,7 +24,7 @@ services:
     image: ibrahimmadi10/supertube-ytdlp:latest
     container_name: ytdlp-api
     volumes:
-      - ./downloads:/youtube
+      - ./supertube-videos:/youtube
     environment:
       - TZ=Europe/Paris
       - YOUTUBE_PATH=/youtube
