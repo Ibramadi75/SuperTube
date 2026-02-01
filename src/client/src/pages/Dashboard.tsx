@@ -399,16 +399,16 @@ function TokenField({
   return (
     <button
       onClick={() => onCopy(token, fieldId)}
-      className="group relative text-green-400 cursor-pointer flex items-center gap-1"
+      className="group text-green-400 cursor-pointer inline-flex items-center gap-1 break-all text-left"
       title="Cliquer pour copier"
     >
       <span className="group-hover:hidden">{masked}</span>
-      <span className="hidden group-hover:inline text-green-300">{token}</span>
+      <span className="hidden group-hover:inline text-green-300 break-all">{token}</span>
       {isCopied && (
-        <span className="text-[10px] text-green-300 ml-1">copie!</span>
+        <span className="text-[10px] text-green-300 whitespace-nowrap">copie!</span>
       )}
       <svg
-        className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
