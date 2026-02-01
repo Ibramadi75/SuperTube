@@ -44,22 +44,22 @@ public class DownloadBackgroundService : BackgroundService
 
     private async Task ProcessPendingDownloadsAsync(CancellationToken stoppingToken)
     {
+        // Only one download at a time to avoid SQLite "database is locked" errors
+        if (_activeDownloads.Count > 0)
+            return;
+
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        // Get pending downloads
-        var pendingDownloads = await db.Downloads
+        // Get next pending download
+        var nextDownload = await db.Downloads
             .Where(d => d.Status == DownloadStatus.Pending)
             .OrderBy(d => d.StartedAt)
-            .Take(3) // Max concurrent downloads
-            .ToListAsync(stoppingToken);
+            .FirstOrDefaultAsync(stoppingToken);
 
-        foreach (var download in pendingDownloads)
+        if (nextDownload != null && !_activeDownloads.ContainsKey(nextDownload.Id))
         {
-            if (_activeDownloads.ContainsKey(download.Id))
-                continue;
-
-            _ = ProcessDownloadAsync(download.Id, stoppingToken);
+            _ = ProcessDownloadAsync(nextDownload.Id, stoppingToken);
         }
     }
 
