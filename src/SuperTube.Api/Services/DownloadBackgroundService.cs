@@ -102,6 +102,9 @@ public class DownloadBackgroundService : BackgroundService
             download.YtdlpId = ytdlpId;
             await db.SaveChangesAsync(cts.Token);
 
+            // Send start notification
+            await SendNotificationAsync(db, download.Url, status: "started");
+
             // Stream progress
             var startTime = DateTime.UtcNow;
 
@@ -152,7 +155,7 @@ public class DownloadBackgroundService : BackgroundService
 
                 // Send notification
                 var title = finalStatus.Result?.Title ?? download.Title ?? "Video";
-                await SendNotificationAsync(db, title, success: true);
+                await SendNotificationAsync(db, title, status: "success");
             }
             else
             {
@@ -161,7 +164,7 @@ public class DownloadBackgroundService : BackgroundService
 
                 // Send failure notification
                 var title = download.Title ?? "Video";
-                await SendNotificationAsync(db, title, success: false);
+                await SendNotificationAsync(db, title, status: "failed");
             }
 
             await db.SaveChangesAsync(cts.Token);
@@ -263,7 +266,7 @@ public class DownloadBackgroundService : BackgroundService
         }
     }
 
-    private async Task SendNotificationAsync(AppDbContext db, string message, bool success = true)
+    private async Task SendNotificationAsync(AppDbContext db, string message, string status = "success")
     {
         try
         {
@@ -273,14 +276,22 @@ public class DownloadBackgroundService : BackgroundService
             if (enabled?.Value != "true" || string.IsNullOrEmpty(topic?.Value))
                 return;
 
+            var (title, tag) = status switch
+            {
+                "started" => ("Telechargement demarre", "arrow_down"),
+                "success" => ("Telechargement termine", "white_check_mark"),
+                "failed" => ("Echec du telechargement", "x"),
+                _ => ("SuperTube", "bell")
+            };
+
             var client = _httpClientFactory.CreateClient();
             var request = new HttpRequestMessage(HttpMethod.Post, $"https://ntfy.sh/{topic.Value}");
-            request.Headers.Add("Title", success ? "Telechargement termine" : "Echec du telechargement");
-            request.Headers.Add("Tags", success ? "white_check_mark" : "x");
+            request.Headers.Add("Title", title);
+            request.Headers.Add("Tags", tag);
             request.Content = new StringContent(message);
 
             await client.SendAsync(request);
-            _logger.LogInformation("Notification sent: {Message}", message);
+            _logger.LogInformation("Notification sent ({Status}): {Message}", status, message);
         }
         catch (Exception ex)
         {
