@@ -152,7 +152,7 @@ public class DownloadBackgroundService : BackgroundService
 
                 // Send notification
                 var title = finalStatus.Result?.Title ?? download.Title ?? "Video";
-                await SendNotificationAsync(db, $"Telechargement termine : {title}");
+                await SendNotificationAsync(db, title, success: true);
             }
             else
             {
@@ -161,7 +161,7 @@ public class DownloadBackgroundService : BackgroundService
 
                 // Send failure notification
                 var title = download.Title ?? "Video";
-                await SendNotificationAsync(db, $"Echec du telechargement : {title}");
+                await SendNotificationAsync(db, title, success: false);
             }
 
             await db.SaveChangesAsync(cts.Token);
@@ -263,7 +263,7 @@ public class DownloadBackgroundService : BackgroundService
         }
     }
 
-    private async Task SendNotificationAsync(AppDbContext db, string message)
+    private async Task SendNotificationAsync(AppDbContext db, string message, bool success = true)
     {
         try
         {
@@ -274,7 +274,12 @@ public class DownloadBackgroundService : BackgroundService
                 return;
 
             var client = _httpClientFactory.CreateClient();
-            await client.PostAsync($"https://ntfy.sh/{topic.Value}", new StringContent(message));
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://ntfy.sh/{topic.Value}");
+            request.Headers.Add("Title", success ? "Telechargement termine" : "Echec du telechargement");
+            request.Headers.Add("Tags", success ? "white_check_mark" : "x");
+            request.Content = new StringContent(message);
+
+            await client.SendAsync(request);
             _logger.LogInformation("Notification sent: {Message}", message);
         }
         catch (Exception ex)
