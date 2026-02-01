@@ -331,6 +331,21 @@
 
 ---
 
+## Phase 12 : Notifications Push (Ntfy)
+
+### 12.1 Backend
+- [ ] Ajouter settings pour Ntfy (topic, enabled)
+- [ ] Envoyer notification a la fin d'un telechargement (succes/echec)
+- [ ] Inclure titre de la video dans la notification
+
+### 12.2 Frontend
+- [ ] Section Notifications dans Parametres
+- [ ] Toggle activer/desactiver
+- [ ] Champ topic Ntfy
+- [ ] Bouton tester la notification
+
+---
+
 ## Backlog V2 (apres la V1)
 
 Ces fonctionnalites ne sont PAS dans le scope V1 :
@@ -339,7 +354,6 @@ Ces fonctionnalites ne sont PAS dans le scope V1 :
 - [ ] Recherche dans la bibliotheque
 - [ ] Filtres (par date, taille, duree)
 - [ ] Retention automatique (supprimer apres X jours)
-- [ ] Notifications (Apprise, webhook)
 - [ ] Multi-utilisateurs
 - [ ] Themes personnalises
 - [ ] Import/export des parametres
