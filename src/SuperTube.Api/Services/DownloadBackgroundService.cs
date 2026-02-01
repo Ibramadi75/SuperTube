@@ -276,19 +276,19 @@ public class DownloadBackgroundService : BackgroundService
             if (enabled?.Value != "true" || string.IsNullOrEmpty(topic?.Value))
                 return;
 
-            var (title, tag) = status switch
+            var (title, tag, body) = status switch
             {
-                "started" => ("Telechargement demarre", "arrow_down"),
-                "success" => ("Telechargement termine", "white_check_mark"),
-                "failed" => ("Echec du telechargement", "x"),
-                _ => ("SuperTube", "bell")
+                "started" => ("Video ajoutee", "arrow_down", "Telechargement commence"),
+                "success" => ("Termine", "white_check_mark", message),
+                "failed" => ("Echec", "x", message),
+                _ => ("SuperTube", "bell", message)
             };
 
             var client = _httpClientFactory.CreateClient();
             var request = new HttpRequestMessage(HttpMethod.Post, $"https://ntfy.sh/{topic.Value}");
             request.Headers.Add("Title", title);
             request.Headers.Add("Tags", tag);
-            request.Content = new StringContent(message);
+            request.Content = new StringContent(body);
 
             await client.SendAsync(request);
             _logger.LogInformation("Notification sent ({Status}): {Message}", status, message);
