@@ -1,0 +1,11 @@
+[
+  {
+    "id": "download",
+    "execute-command": "/scripts/download.sh",
+    "command-working-directory": "/scripts",
+    "pass-arguments-to-command": [
+      { "source": "payload", "name": "url" },
+      { "source": "header", "name": "X-Webhook-Token" }
+    ]
+  }
+]

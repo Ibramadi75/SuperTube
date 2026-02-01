@@ -7,10 +7,10 @@ RUN apk add --no-cache curl webhook
 COPY scripts/ /scripts/
 RUN chmod +x /scripts/*.sh
 
-# Copy hooks template
-COPY hooks.template.json /etc/webhook/hooks.template.json
+# Copy hooks configuration
+COPY hooks.json /etc/webhook/hooks.json
 
-# Entrypoint script to substitute token
+# Entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

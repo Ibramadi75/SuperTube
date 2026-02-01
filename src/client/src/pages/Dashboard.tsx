@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
 import { DownloadForm, DownloadProgress, VideoCard, VideoPlayer } from '../components'
+import { getWebhookConfig } from '../api'
+import type { WebhookConfig } from '../types'
 
 export function Dashboard() {
   const {
@@ -19,13 +21,22 @@ export function Dashboard() {
   } = useStore()
 
   const [showManualDownload, setShowManualDownload] = useState(false)
+  const [webhookConfig, setWebhookConfig] = useState<WebhookConfig | null>(null)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
 
   useEffect(() => {
     fetchVideos()
     fetchDownloads()
     fetchStats()
     fetchStorage()
+    getWebhookConfig().then(setWebhookConfig).catch(() => {})
   }, [fetchVideos, fetchDownloads, fetchStats, fetchStorage])
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(field)
+    setTimeout(() => setCopiedField(null), 2000)
+  }
 
   const activeDownloads = downloads.filter((d) => d.status === 0 || d.status === 1)
   const recentVideos = videos.slice(0, 6)
@@ -143,11 +154,36 @@ export function Dashboard() {
                   title="Configurer l'action"
                   description={'Ajoutez "Obtenir le contenu de l\'URL" :'}
                 >
-                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 mt-2 text-xs font-mono">
-                    <p><span className="text-[var(--text-secondary)]">URL :</span> <span className="text-[var(--accent)]">http://IP:9001/hooks/download</span></p>
+                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 mt-2 text-xs font-mono space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[var(--text-secondary)]">URL :</span>
+                      {webhookConfig ? (
+                        <button
+                          onClick={() => copyToClipboard(webhookConfig.url, 'ios-url')}
+                          className="text-[var(--accent)] hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          <span className="break-all">{webhookConfig.url}</span>
+                          {copiedField === 'ios-url' && <span className="text-green-400 text-[10px]">copie!</span>}
+                        </button>
+                      ) : (
+                        <span className="text-[var(--text-secondary)]">chargement...</span>
+                      )}
+                    </div>
                     <p><span className="text-[var(--text-secondary)]">Methode :</span> POST</p>
                     <p><span className="text-[var(--text-secondary)]">Corps :</span> {"{"}"url": "[Entree]"{"}"}</p>
-                    <p><span className="text-[var(--text-secondary)]">En-tete :</span> X-Webhook-Token: <span className="text-green-400">(Parametres)</span></p>
+                    {webhookConfig?.requiresToken && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[var(--text-secondary)]">Header :</span>
+                        <span className="text-white">X-Webhook-Token:</span>
+                        <button
+                          onClick={() => copyToClipboard(webhookConfig.token, 'ios-token')}
+                          className="text-green-400 hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          {webhookConfig.token}
+                          {copiedField === 'ios-token' && <span className="text-[10px] ml-1">copie!</span>}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </TutorialStep>
                 <TutorialStep
@@ -185,11 +221,36 @@ export function Dashboard() {
                   title="Creer un shortcut"
                   description="Ajoutez un nouveau raccourci HTTP :"
                 >
-                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 mt-2 text-xs font-mono">
-                    <p><span className="text-[var(--text-secondary)]">URL :</span> <span className="text-[var(--accent)]">http://IP:9001/hooks/download</span></p>
+                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 mt-2 text-xs font-mono space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[var(--text-secondary)]">URL :</span>
+                      {webhookConfig ? (
+                        <button
+                          onClick={() => copyToClipboard(webhookConfig.url, 'android-url')}
+                          className="text-[var(--accent)] hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          <span className="break-all">{webhookConfig.url}</span>
+                          {copiedField === 'android-url' && <span className="text-green-400 text-[10px]">copie!</span>}
+                        </button>
+                      ) : (
+                        <span className="text-[var(--text-secondary)]">chargement...</span>
+                      )}
+                    </div>
                     <p><span className="text-[var(--text-secondary)]">Methode :</span> POST</p>
                     <p><span className="text-[var(--text-secondary)]">Corps :</span> {"{"}"url": "{"{"}url{"}"}"{"}"}</p>
-                    <p><span className="text-[var(--text-secondary)]">En-tete :</span> X-Webhook-Token: <span className="text-green-400">(Parametres)</span></p>
+                    {webhookConfig?.requiresToken && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[var(--text-secondary)]">Header :</span>
+                        <span className="text-white">X-Webhook-Token:</span>
+                        <button
+                          onClick={() => copyToClipboard(webhookConfig.token, 'android-token')}
+                          className="text-green-400 hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          {webhookConfig.token}
+                          {copiedField === 'android-token' && <span className="text-[10px] ml-1">copie!</span>}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </TutorialStep>
                 <TutorialStep

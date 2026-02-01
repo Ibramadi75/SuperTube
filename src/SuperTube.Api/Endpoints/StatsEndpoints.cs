@@ -73,21 +73,113 @@ public static class StatsEndpoints
         });
 
         // GET /api/webhook - Webhook configuration
-        app.MapGet("/api/webhook", () =>
+        app.MapGet("/api/webhook", async (AppDbContext db) =>
         {
-            var token = Environment.GetEnvironmentVariable("WEBHOOK_TOKEN");
             var webhookHost = Environment.GetEnvironmentVariable("WEBHOOK_HOST") ?? "VOTRE_IP";
             var webhookPort = Environment.GetEnvironmentVariable("WEBHOOK_PORT") ?? "9001";
+
+            var tokenEnabled = await db.Settings.FindAsync("webhook.tokenEnabled");
+            var tokenValue = await db.Settings.FindAsync("webhook.token");
+
+            var requiresToken = tokenEnabled?.Value == "true";
+            var token = requiresToken ? (tokenValue?.Value ?? "") : "";
 
             return Results.Ok(new
             {
                 data = new
                 {
-                    enabled = !string.IsNullOrEmpty(token),
-                    token = token ?? "",
+                    enabled = true,
+                    requiresToken,
+                    token,
                     url = $"http://{webhookHost}:{webhookPort}/hooks/download"
                 }
             });
+        });
+
+        // PUT /api/webhook - Update webhook settings
+        app.MapPut("/api/webhook", async (WebhookUpdateRequest request, AppDbContext db) =>
+        {
+            var tokenEnabled = await db.Settings.FindAsync("webhook.tokenEnabled");
+            var tokenValue = await db.Settings.FindAsync("webhook.token");
+
+            // Update or create tokenEnabled setting
+            if (tokenEnabled is not null)
+            {
+                tokenEnabled.Value = request.RequireToken.ToString().ToLower();
+            }
+            else
+            {
+                db.Settings.Add(new Setting { Key = "webhook.tokenEnabled", Value = request.RequireToken.ToString().ToLower() });
+            }
+
+            // Generate new token if enabling and no token exists
+            if (request.RequireToken && (tokenValue is null || string.IsNullOrEmpty(tokenValue.Value)))
+            {
+                var newToken = GenerateToken();
+                if (tokenValue is not null)
+                {
+                    tokenValue.Value = newToken;
+                }
+                else
+                {
+                    db.Settings.Add(new Setting { Key = "webhook.token", Value = newToken });
+                }
+            }
+
+            await db.SaveChangesAsync();
+
+            // Return updated config
+            var webhookHost = Environment.GetEnvironmentVariable("WEBHOOK_HOST") ?? "VOTRE_IP";
+            var webhookPort = Environment.GetEnvironmentVariable("WEBHOOK_PORT") ?? "9001";
+            var finalToken = request.RequireToken ? (await db.Settings.FindAsync("webhook.token"))?.Value ?? "" : "";
+
+            return Results.Ok(new
+            {
+                data = new
+                {
+                    enabled = true,
+                    requiresToken = request.RequireToken,
+                    token = finalToken,
+                    url = $"http://{webhookHost}:{webhookPort}/hooks/download"
+                }
+            });
+        });
+
+        // POST /api/webhook/verify - Verify webhook token (called by webhook container)
+        app.MapPost("/api/webhook/verify", async (TokenVerifyRequest request, AppDbContext db) =>
+        {
+            var tokenEnabled = await db.Settings.FindAsync("webhook.tokenEnabled");
+            var tokenValue = await db.Settings.FindAsync("webhook.token");
+
+            // If token not required, always valid
+            if (tokenEnabled?.Value != "true")
+            {
+                return Results.Ok(new { valid = true });
+            }
+
+            // Check token matches
+            var isValid = !string.IsNullOrEmpty(request.Token) && request.Token == tokenValue?.Value;
+            return Results.Ok(new { valid = isValid });
+        });
+
+        // POST /api/webhook/regenerate - Generate a new token
+        app.MapPost("/api/webhook/regenerate", async (AppDbContext db) =>
+        {
+            var tokenValue = await db.Settings.FindAsync("webhook.token");
+            var newToken = GenerateToken();
+
+            if (tokenValue is not null)
+            {
+                tokenValue.Value = newToken;
+            }
+            else
+            {
+                db.Settings.Add(new Setting { Key = "webhook.token", Value = newToken });
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { data = new { token = newToken } });
         });
 
         // GET /api/storage - Storage info
@@ -151,4 +243,15 @@ public static class StatsEndpoints
         var minutes = (totalSeconds % 3600) / 60;
         return hours > 0 ? $"{hours}h {minutes}m" : $"{minutes}m";
     }
+
+    private static string GenerateToken()
+    {
+        var bytes = new byte[24];
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        rng.GetBytes(bytes);
+        return Convert.ToBase64String(bytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
+    }
 }
+
+public record WebhookUpdateRequest(bool RequireToken);
+public record TokenVerifyRequest(string Token);

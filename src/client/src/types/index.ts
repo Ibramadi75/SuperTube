@@ -84,6 +84,7 @@ export interface StorageInfo {
 
 export interface WebhookConfig {
   enabled: boolean
+  requiresToken: boolean
   token: string
   url: string
 }
