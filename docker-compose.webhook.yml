@@ -1,0 +1,43 @@
+services:
+  supertube:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: supertube
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data:/data
+      - ./youtube:/youtube
+    environment:
+      - TZ=Europe/Paris
+      - YTDLP_API_URL=http://ytdlp-api:3001
+    depends_on:
+      - ytdlp-api
+    restart: unless-stopped
+
+  ytdlp-api:
+    build:
+      context: ./src/ytdlp-api
+      dockerfile: Dockerfile
+    container_name: ytdlp-api
+    volumes:
+      - ./youtube:/youtube
+    environment:
+      - TZ=Europe/Paris
+      - YOUTUBE_PATH=/youtube
+    restart: unless-stopped
+
+  webhook:
+    build:
+      context: ./webhook
+      dockerfile: Dockerfile
+    container_name: supertube-webhook
+    ports:
+      - "9001:9000"
+    environment:
+      - TZ=Europe/Paris
+      - WEBHOOK_TOKEN=${WEBHOOK_TOKEN:-changeme}
+    depends_on:
+      - supertube
+    restart: unless-stopped
