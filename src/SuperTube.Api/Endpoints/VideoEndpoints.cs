@@ -13,7 +13,7 @@ public static class VideoEndpoints
         // GET /api/videos - List all videos
         group.MapGet("/", async (AppDbContext db, int? limit, int? offset) =>
         {
-            var query = db.Videos.OrderByDescending(v => v.DownloadedAt).AsQueryable();
+            var query = db.Videos.OrderByDescending(v => v.PublishedAt ?? v.DownloadedAt).AsQueryable();
 
             if (offset.HasValue)
                 query = query.Skip(offset.Value);

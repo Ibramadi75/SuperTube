@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Video, Download, Settings, Stats, StorageInfo, Channel } from '../types'
+import type { Video, Download, Settings, Stats, StorageInfo, Channel, Subscription } from '../types'
 import * as api from '../api'
 
 interface AppState {
@@ -47,6 +47,16 @@ interface AppState {
   statsLoading: boolean
   fetchStats: () => Promise<void>
   fetchStorage: () => Promise<void>
+
+  // Subscriptions
+  subscriptions: Subscription[]
+  subscriptionsLoading: boolean
+  fetchSubscriptions: () => Promise<void>
+  createSubscription: (channelUrl: string) => Promise<void>
+  toggleSubscription: (id: string, isActive: boolean) => Promise<void>
+  deleteSubscription: (id: string) => Promise<void>
+  checkSubscription: (id: string) => Promise<void>
+  checkAllSubscriptions: () => Promise<void>
 
   // UI
   selectedVideo: Video | null
@@ -315,6 +325,80 @@ export const useStore = create<AppState>((set, get) => ({
       set({ storage })
     } catch {
       // Ignore
+    }
+  },
+
+  // Subscriptions
+  subscriptions: [],
+  subscriptionsLoading: false,
+
+  fetchSubscriptions: async () => {
+    set({ subscriptionsLoading: true })
+    try {
+      const { subscriptions } = await api.getSubscriptions()
+      set({ subscriptions, subscriptionsLoading: false })
+    } catch {
+      set({ subscriptionsLoading: false })
+    }
+  },
+
+  createSubscription: async (channelUrl: string) => {
+    try {
+      const subscription = await api.createSubscription(channelUrl)
+      set({ subscriptions: [subscription, ...get().subscriptions] })
+      get().addToast('Abonnement cree', 'success')
+    } catch (error) {
+      get().addToast((error as Error).message, 'error')
+    }
+  },
+
+  toggleSubscription: async (id: string, isActive: boolean) => {
+    try {
+      const subscription = await api.updateSubscription(id, isActive)
+      set({
+        subscriptions: get().subscriptions.map((s) =>
+          s.id === id ? subscription : s
+        ),
+      })
+      get().addToast(isActive ? 'Abonnement active' : 'Abonnement desactive', 'success')
+    } catch (error) {
+      get().addToast((error as Error).message, 'error')
+    }
+  },
+
+  deleteSubscription: async (id: string) => {
+    try {
+      await api.deleteSubscription(id)
+      set({ subscriptions: get().subscriptions.filter((s) => s.id !== id) })
+      get().addToast('Abonnement supprime', 'success')
+    } catch (error) {
+      get().addToast((error as Error).message, 'error')
+    }
+  },
+
+  checkSubscription: async (id: string) => {
+    try {
+      const result = await api.checkSubscription(id)
+      get().addToast(`${result.newVideos} nouvelle(s) video(s) trouvee(s)`, 'success')
+      get().fetchSubscriptions()
+      if (result.newVideos > 0) {
+        get().fetchDownloads()
+      }
+    } catch (error) {
+      get().addToast((error as Error).message, 'error')
+    }
+  },
+
+  checkAllSubscriptions: async () => {
+    try {
+      const result = await api.checkAllSubscriptions()
+      get().addToast(`${result.newVideos} nouvelle(s) video(s) trouvee(s)`, 'success')
+      get().fetchSubscriptions()
+      if (result.newVideos > 0) {
+        get().fetchDownloads()
+      }
+    } catch (error) {
+      get().addToast((error as Error).message, 'error')
     }
   },
 

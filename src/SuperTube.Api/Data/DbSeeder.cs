@@ -10,8 +10,6 @@ public static class DbSeeder
 
     private static void SeedSettings(AppDbContext db)
     {
-        if (db.Settings.Any()) return;
-
         var defaultSettings = new Dictionary<string, string>
         {
             ["quality.default"] = "1080p",
@@ -24,12 +22,20 @@ public static class DbSeeder
             ["performance.retries"] = "3",
             ["sponsorblock.enabled"] = "true",
             ["sponsorblock.action"] = "mark",
-            ["sponsorblock.categories"] = "sponsor,intro,outro,selfpromo,preview,filler,interaction"
+            ["sponsorblock.categories"] = "sponsor,intro,outro,selfpromo,preview,filler,interaction",
+            ["subscription.enabled"] = "true",
+            ["subscription.auto_subscribe"] = "true",
+            ["subscription.cron"] = "0 * 9-21 * * *"
         };
+
+        var existingKeys = db.Settings.Select(s => s.Key).ToHashSet();
 
         foreach (var (key, value) in defaultSettings)
         {
-            db.Settings.Add(new Setting { Key = key, Value = value });
+            if (!existingKeys.Contains(key))
+            {
+                db.Settings.Add(new Setting { Key = key, Value = value });
+            }
         }
     }
 
