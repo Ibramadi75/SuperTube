@@ -1,8 +1,18 @@
 import { create } from 'zustand'
-import type { Video, Download, Settings, Stats, StorageInfo, Channel, Subscription } from '../types'
+import type { Video, Download, Settings, Stats, StorageInfo, Channel, Subscription, User } from '../types'
 import * as api from '../api'
 
 interface AppState {
+  // Auth
+  token: string | null
+  user: User | null
+  isAuthenticated: boolean
+  authLoading: boolean
+  login: (username: string, password: string) => Promise<void>
+  logout: () => void
+  checkAuth: () => Promise<void>
+  updateToken: (token: string) => void
+
   // Videos
   videos: Video[]
   videosLoading: boolean
@@ -73,6 +83,44 @@ interface Toast {
 }
 
 export const useStore = create<AppState>((set, get) => ({
+  // Auth
+  token: localStorage.getItem('supertube_token'),
+  user: null,
+  isAuthenticated: !!localStorage.getItem('supertube_token'),
+  authLoading: true,
+
+  login: async (username: string, password: string) => {
+    const { token, user } = await api.login(username, password)
+    localStorage.setItem('supertube_token', token)
+    set({ token, user, isAuthenticated: true, authLoading: false })
+  },
+
+  logout: () => {
+    localStorage.removeItem('supertube_token')
+    set({ token: null, user: null, isAuthenticated: false })
+    window.location.href = '/login'
+  },
+
+  checkAuth: async () => {
+    const token = localStorage.getItem('supertube_token')
+    if (!token) {
+      set({ authLoading: false, isAuthenticated: false })
+      return
+    }
+    try {
+      const user = await api.getMe()
+      set({ user, isAuthenticated: true, authLoading: false })
+    } catch {
+      localStorage.removeItem('supertube_token')
+      set({ token: null, user: null, isAuthenticated: false, authLoading: false })
+    }
+  },
+
+  updateToken: (token: string) => {
+    localStorage.setItem('supertube_token', token)
+    set({ token })
+  },
+
   // Videos
   videos: [],
   videosLoading: false,

@@ -115,6 +115,17 @@ export interface NtfyConfig {
   topic: string
 }
 
+// User
+export interface User {
+  id: string
+  username: string
+  displayName: string
+  role: string
+  storageQuotaBytes: number | null
+  storageUsedBytes?: number
+  createdAt?: string
+}
+
 // Channel (derived from videos)
 export interface Channel {
   name: string

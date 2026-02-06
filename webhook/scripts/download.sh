@@ -23,7 +23,7 @@ if [ -z "$IS_VALID" ]; then
   exit 1
 fi
 
-# Call SuperTube API to start download
-curl -s -X POST "${API_BASE}/api/downloads" \
+# Call SuperTube internal API to start download (no JWT needed, Docker network trust)
+curl -s -X POST "${API_BASE}/api/internal/downloads" \
   -H "Content-Type: application/json" \
   -d "{\"url\": \"$URL\"}"

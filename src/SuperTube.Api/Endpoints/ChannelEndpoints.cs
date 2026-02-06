@@ -8,12 +8,14 @@ public static class ChannelEndpoints
 {
     public static void MapChannelEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/channels");
+        var group = app.MapGroup("/api/channels").RequireAuthorization();
 
         // GET /api/channels - List all channels (grouped by uploader)
-        group.MapGet("/", async (AppDbContext db) =>
+        group.MapGet("/", async (AppDbContext db, HttpContext httpContext) =>
         {
+            var userId = httpContext.GetUserId();
             var channels = await db.Videos
+                .Where(v => v.UserId == userId)
                 .GroupBy(v => v.Uploader)
                 .Select(g => new
                 {
@@ -29,11 +31,12 @@ public static class ChannelEndpoints
         });
 
         // GET /api/channels/{name} - Get videos for a channel
-        group.MapGet("/{name}", async (string name, AppDbContext db) =>
+        group.MapGet("/{name}", async (string name, AppDbContext db, HttpContext httpContext) =>
         {
+            var userId = httpContext.GetUserId();
             var decodedName = Uri.UnescapeDataString(name);
             var videos = await db.Videos
-                .Where(v => v.Uploader == decodedName)
+                .Where(v => v.Uploader == decodedName && v.UserId == userId)
                 .OrderByDescending(v => v.DownloadedAt)
                 .ToListAsync();
 
@@ -44,11 +47,12 @@ public static class ChannelEndpoints
         });
 
         // DELETE /api/channels/{name} - Delete all videos from a channel
-        group.MapDelete("/{name}", async (string name, AppDbContext db) =>
+        group.MapDelete("/{name}", async (string name, AppDbContext db, HttpContext httpContext) =>
         {
+            var userId = httpContext.GetUserId();
             var decodedName = Uri.UnescapeDataString(name);
             var videos = await db.Videos
-                .Where(v => v.Uploader == decodedName)
+                .Where(v => v.Uploader == decodedName && v.UserId == userId)
                 .ToListAsync();
 
             if (!videos.Any())
@@ -69,11 +73,12 @@ public static class ChannelEndpoints
         });
 
         // POST /api/channels/{name}/refresh - Refresh all videos metadata for a channel
-        group.MapPost("/{name}/refresh", async (string name, AppDbContext db, IYtdlpService ytdlpService) =>
+        group.MapPost("/{name}/refresh", async (string name, AppDbContext db, HttpContext httpContext, IYtdlpService ytdlpService) =>
         {
+            var userId = httpContext.GetUserId();
             var decodedName = Uri.UnescapeDataString(name);
             var videos = await db.Videos
-                .Where(v => v.Uploader == decodedName)
+                .Where(v => v.Uploader == decodedName && v.UserId == userId)
                 .ToListAsync();
 
             if (!videos.Any())

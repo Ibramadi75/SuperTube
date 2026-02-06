@@ -8,12 +8,14 @@ public static class SubscriptionEndpoints
 {
     public static void MapSubscriptionEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/subscriptions");
+        var group = app.MapGroup("/api/subscriptions").RequireAuthorization();
 
         // GET /api/subscriptions - List all subscriptions
-        group.MapGet("/", async (AppDbContext db) =>
+        group.MapGet("/", async (AppDbContext db, HttpContext httpContext) =>
         {
+            var userId = httpContext.GetUserId();
             var subscriptions = await db.Subscriptions
+                .Where(s => s.UserId == userId)
                 .OrderByDescending(s => s.SubscribedAt)
                 .ToListAsync();
 
@@ -21,21 +23,23 @@ public static class SubscriptionEndpoints
         });
 
         // GET /api/subscriptions/{id} - Get subscription by ID
-        group.MapGet("/{id}", async (string id, AppDbContext db) =>
+        group.MapGet("/{id}", async (string id, AppDbContext db, HttpContext httpContext) =>
         {
-            var subscription = await db.Subscriptions.FindAsync(id);
+            var userId = httpContext.GetUserId();
+            var subscription = await db.Subscriptions.FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
             return subscription is not null
                 ? Results.Ok(new { data = subscription })
                 : Results.NotFound(new { error = new { code = "SUBSCRIPTION_NOT_FOUND", message = $"Subscription '{id}' not found" } });
         });
 
         // POST /api/subscriptions - Create subscription from channel URL
-        group.MapPost("/", async (CreateSubscriptionRequest request, AppDbContext db, ISubscriptionService subscriptionService) =>
+        group.MapPost("/", async (CreateSubscriptionRequest request, AppDbContext db, HttpContext httpContext, ISubscriptionService subscriptionService) =>
         {
             if (string.IsNullOrWhiteSpace(request.ChannelUrl))
                 return Results.BadRequest(new { error = new { code = "INVALID_URL", message = "Channel URL is required" } });
 
-            var subscription = await subscriptionService.CreateFromUrlAsync(request.ChannelUrl, db);
+            var userId = httpContext.GetUserId()!;
+            var subscription = await subscriptionService.CreateFromUrlAsync(request.ChannelUrl, db, userId);
             if (subscription is null)
                 return Results.BadRequest(new { error = new { code = "CREATE_FAILED", message = "Failed to create subscription. Could not fetch channel info." } });
 
@@ -43,9 +47,10 @@ public static class SubscriptionEndpoints
         });
 
         // PUT /api/subscriptions/{id} - Update subscription (toggle active)
-        group.MapPut("/{id}", async (string id, UpdateSubscriptionRequest request, AppDbContext db) =>
+        group.MapPut("/{id}", async (string id, UpdateSubscriptionRequest request, AppDbContext db, HttpContext httpContext) =>
         {
-            var subscription = await db.Subscriptions.FindAsync(id);
+            var userId = httpContext.GetUserId();
+            var subscription = await db.Subscriptions.FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
             if (subscription is null)
                 return Results.NotFound(new { error = new { code = "SUBSCRIPTION_NOT_FOUND", message = $"Subscription '{id}' not found" } });
 
@@ -58,9 +63,10 @@ public static class SubscriptionEndpoints
         });
 
         // DELETE /api/subscriptions/{id} - Delete subscription
-        group.MapDelete("/{id}", async (string id, AppDbContext db) =>
+        group.MapDelete("/{id}", async (string id, AppDbContext db, HttpContext httpContext) =>
         {
-            var subscription = await db.Subscriptions.FindAsync(id);
+            var userId = httpContext.GetUserId();
+            var subscription = await db.Subscriptions.FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
             if (subscription is null)
                 return Results.NotFound(new { error = new { code = "SUBSCRIPTION_NOT_FOUND", message = $"Subscription '{id}' not found" } });
 
@@ -71,9 +77,10 @@ public static class SubscriptionEndpoints
         });
 
         // POST /api/subscriptions/{id}/check - Check subscription for new videos
-        group.MapPost("/{id}/check", async (string id, AppDbContext db, ISubscriptionService subscriptionService) =>
+        group.MapPost("/{id}/check", async (string id, AppDbContext db, HttpContext httpContext, ISubscriptionService subscriptionService) =>
         {
-            var subscription = await db.Subscriptions.FindAsync(id);
+            var userId = httpContext.GetUserId();
+            var subscription = await db.Subscriptions.FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
             if (subscription is null)
                 return Results.NotFound(new { error = new { code = "SUBSCRIPTION_NOT_FOUND", message = $"Subscription '{id}' not found" } });
 
@@ -83,10 +90,11 @@ public static class SubscriptionEndpoints
         });
 
         // POST /api/subscriptions/check-all - Check all subscriptions
-        group.MapPost("/check-all", async (AppDbContext db, ISubscriptionService subscriptionService) =>
+        group.MapPost("/check-all", async (AppDbContext db, HttpContext httpContext, ISubscriptionService subscriptionService) =>
         {
-            var newVideos = await subscriptionService.CheckAllSubscriptionsAsync(db);
-            var activeCount = await db.Subscriptions.CountAsync(s => s.IsActive);
+            var userId = httpContext.GetUserId();
+            var newVideos = await subscriptionService.CheckAllSubscriptionsAsync(db, userId);
+            var activeCount = await db.Subscriptions.CountAsync(s => s.IsActive && s.UserId == userId);
 
             return Results.Ok(new { data = new { newVideos, checkedSubscriptions = activeCount } });
         });

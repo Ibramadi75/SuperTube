@@ -8,12 +8,16 @@ public static class DownloadEndpoints
 {
     public static void MapDownloadEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/downloads");
+        var group = app.MapGroup("/api/downloads").RequireAuthorization();
 
         // GET /api/downloads - List all downloads
-        group.MapGet("/", async (AppDbContext db, string? status) =>
+        group.MapGet("/", async (AppDbContext db, HttpContext httpContext, string? status) =>
         {
-            var query = db.Downloads.OrderByDescending(d => d.StartedAt).AsQueryable();
+            var userId = httpContext.GetUserId();
+            var query = db.Downloads
+                .Where(d => d.UserId == userId)
+                .OrderByDescending(d => d.StartedAt)
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(status) && Enum.TryParse<DownloadStatus>(status, true, out var statusEnum))
             {
@@ -25,22 +29,34 @@ public static class DownloadEndpoints
         });
 
         // GET /api/downloads/{id} - Get download by ID
-        group.MapGet("/{id}", async (string id, AppDbContext db) =>
+        group.MapGet("/{id}", async (string id, AppDbContext db, HttpContext httpContext) =>
         {
-            var download = await db.Downloads.FindAsync(id);
+            var userId = httpContext.GetUserId();
+            var download = await db.Downloads.FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
             return download is not null
                 ? Results.Ok(new { data = download })
                 : Results.NotFound(new { error = new { code = "DOWNLOAD_NOT_FOUND", message = $"Download '{id}' not found" } });
         });
 
         // POST /api/downloads - Start a new download
-        group.MapPost("/", async (DownloadRequest request, AppDbContext db) =>
+        group.MapPost("/", async (DownloadRequest request, AppDbContext db, HttpContext httpContext) =>
         {
             if (string.IsNullOrWhiteSpace(request.Url))
                 return Results.BadRequest(new { error = new { code = "INVALID_URL", message = "URL is required" } });
 
             if (!IsValidYouTubeUrl(request.Url))
                 return Results.BadRequest(new { error = new { code = "INVALID_URL", message = "Invalid YouTube URL" } });
+
+            var userId = httpContext.GetUserId()!;
+
+            // Check storage quota
+            var user = await db.Users.FindAsync(userId);
+            if (user?.StorageQuotaBytes is not null)
+            {
+                var used = await CurrentUserExtensions.GetUserStorageUsedBytes(db, userId);
+                if (used >= user.StorageQuotaBytes.Value)
+                    return Results.BadRequest(new { error = new { code = "QUOTA_EXCEEDED", message = "Storage quota exceeded" } });
+            }
 
             var download = new Download
             {
@@ -50,21 +66,21 @@ public static class DownloadEndpoints
                 Progress = 0,
                 StartedAt = DateTime.UtcNow,
                 Quality = request.Quality ?? "1080p",
-                ConcurrentFragments = request.ConcurrentFragments ?? 4
+                ConcurrentFragments = request.ConcurrentFragments ?? 4,
+                UserId = userId
             };
 
             db.Downloads.Add(download);
             await db.SaveChangesAsync();
 
-            // Download will be picked up by DownloadBackgroundService
-
             return Results.Created($"/api/downloads/{download.Id}", new { data = download });
         });
 
         // DELETE /api/downloads/{id} - Cancel a download
-        group.MapDelete("/{id}", async (string id, AppDbContext db, DownloadBackgroundService backgroundService, IYtdlpService ytdlpService) =>
+        group.MapDelete("/{id}", async (string id, AppDbContext db, HttpContext httpContext, DownloadBackgroundService backgroundService, IYtdlpService ytdlpService) =>
         {
-            var download = await db.Downloads.FindAsync(id);
+            var userId = httpContext.GetUserId();
+            var download = await db.Downloads.FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
             if (download is null)
                 return Results.NotFound(new { error = new { code = "DOWNLOAD_NOT_FOUND", message = $"Download '{id}' not found" } });
 
@@ -96,7 +112,8 @@ public static class DownloadEndpoints
         // GET /api/downloads/{id}/progress - SSE stream for real-time progress
         group.MapGet("/{id}/progress", async (string id, AppDbContext db, HttpContext httpContext, CancellationToken ct) =>
         {
-            var download = await db.Downloads.FindAsync(id);
+            var userId = httpContext.GetUserId();
+            var download = await db.Downloads.FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId, ct);
             if (download is null)
             {
                 httpContext.Response.StatusCode = 404;
@@ -158,6 +175,37 @@ public static class DownloadEndpoints
                 // Client disconnected, this is normal
             }
         });
+
+        // POST /api/internal/downloads - Internal endpoint for webhook (no auth)
+        app.MapPost("/api/internal/downloads", async (DownloadRequest request, AppDbContext db) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Url))
+                return Results.BadRequest(new { error = new { code = "INVALID_URL", message = "URL is required" } });
+
+            if (!IsValidYouTubeUrl(request.Url))
+                return Results.BadRequest(new { error = new { code = "INVALID_URL", message = "Invalid YouTube URL" } });
+
+            // Assign to first admin
+            var admin = await db.Users.FirstOrDefaultAsync(u => u.Role == "admin");
+            var adminId = admin?.Id;
+
+            var download = new Download
+            {
+                Id = Guid.NewGuid().ToString("N")[..12],
+                Url = request.Url,
+                Status = DownloadStatus.Pending,
+                Progress = 0,
+                StartedAt = DateTime.UtcNow,
+                Quality = request.Quality ?? "1080p",
+                ConcurrentFragments = request.ConcurrentFragments ?? 4,
+                UserId = adminId
+            };
+
+            db.Downloads.Add(download);
+            await db.SaveChangesAsync();
+
+            return Results.Created($"/api/downloads/{download.Id}", new { data = download });
+        }).AllowAnonymous();
     }
 
     private static bool IsValidYouTubeUrl(string url)

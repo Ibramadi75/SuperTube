@@ -5,10 +5,10 @@ namespace SuperTube.Api.Services;
 
 public interface ISubscriptionService
 {
-    Task<Subscription?> CreateFromVideoAsync(Video video, YtdlpVideoInfo videoInfo, AppDbContext db);
-    Task<Subscription?> CreateFromUrlAsync(string channelUrl, AppDbContext db);
+    Task<Subscription?> CreateFromVideoAsync(Video video, YtdlpVideoInfo videoInfo, AppDbContext db, string? userId);
+    Task<Subscription?> CreateFromUrlAsync(string channelUrl, AppDbContext db, string? userId = null);
     Task<int> CheckSubscriptionAsync(string subscriptionId, AppDbContext db);
-    Task<int> CheckAllSubscriptionsAsync(AppDbContext db);
+    Task<int> CheckAllSubscriptionsAsync(AppDbContext db, string? userId = null);
 }
 
 public class SubscriptionService : ISubscriptionService
@@ -22,7 +22,7 @@ public class SubscriptionService : ISubscriptionService
         _logger = logger;
     }
 
-    public async Task<Subscription?> CreateFromVideoAsync(Video video, YtdlpVideoInfo videoInfo, AppDbContext db)
+    public async Task<Subscription?> CreateFromVideoAsync(Video video, YtdlpVideoInfo videoInfo, AppDbContext db, string? userId)
     {
         if (string.IsNullOrEmpty(videoInfo.ChannelId) || string.IsNullOrEmpty(videoInfo.ChannelUrl))
         {
@@ -30,8 +30,8 @@ public class SubscriptionService : ISubscriptionService
             return null;
         }
 
-        // Check if subscription already exists
-        var existing = await db.Subscriptions.FirstOrDefaultAsync(s => s.ChannelId == videoInfo.ChannelId);
+        // Check if subscription already exists for this user and channel
+        var existing = await db.Subscriptions.FirstOrDefaultAsync(s => s.ChannelId == videoInfo.ChannelId && s.UserId == userId);
         if (existing != null)
         {
             _logger.LogDebug("Subscription already exists for channel {ChannelId}", videoInfo.ChannelId);
@@ -57,7 +57,8 @@ public class SubscriptionService : ISubscriptionService
             IsActive = true,
             SubscribedAt = DateTime.UtcNow,
             LastVideoDate = lastVideoDate,
-            TotalDownloaded = 1
+            TotalDownloaded = 1,
+            UserId = userId
         };
 
         db.Subscriptions.Add(subscription);
@@ -75,7 +76,7 @@ public class SubscriptionService : ISubscriptionService
         return subscription;
     }
 
-    public async Task<Subscription?> CreateFromUrlAsync(string channelUrl, AppDbContext db)
+    public async Task<Subscription?> CreateFromUrlAsync(string channelUrl, AppDbContext db, string? userId = null)
     {
         // Get channel info by fetching a video from the channel
         var videos = await _ytdlpService.GetChannelVideosAsync(channelUrl);
@@ -96,8 +97,8 @@ public class SubscriptionService : ISubscriptionService
             return null;
         }
 
-        // Check if subscription already exists
-        var existing = await db.Subscriptions.FirstOrDefaultAsync(s => s.ChannelId == videoInfo.ChannelId);
+        // Check if subscription already exists for this user and channel
+        var existing = await db.Subscriptions.FirstOrDefaultAsync(s => s.ChannelId == videoInfo.ChannelId && s.UserId == userId);
         if (existing != null)
             return existing;
 
@@ -110,7 +111,8 @@ public class SubscriptionService : ISubscriptionService
             IsActive = true,
             SubscribedAt = DateTime.UtcNow,
             LastVideoDate = DateTime.UtcNow,
-            TotalDownloaded = 0
+            TotalDownloaded = 0,
+            UserId = userId
         };
 
         db.Subscriptions.Add(subscription);
@@ -170,7 +172,7 @@ public class SubscriptionService : ISubscriptionService
                 }
             }
 
-            // Create download
+            // Create download - inherit UserId from subscription
             var download = new Download
             {
                 Id = Guid.NewGuid().ToString()[..12],
@@ -178,7 +180,8 @@ public class SubscriptionService : ISubscriptionService
                 Status = DownloadStatus.Pending,
                 Title = video.Title,
                 Uploader = subscription.ChannelName,
-                StartedAt = DateTime.UtcNow
+                StartedAt = DateTime.UtcNow,
+                UserId = subscription.UserId
             };
 
             db.Downloads.Add(download);
@@ -197,11 +200,13 @@ public class SubscriptionService : ISubscriptionService
         return newDownloads;
     }
 
-    public async Task<int> CheckAllSubscriptionsAsync(AppDbContext db)
+    public async Task<int> CheckAllSubscriptionsAsync(AppDbContext db, string? userId = null)
     {
-        var subscriptions = await db.Subscriptions
-            .Where(s => s.IsActive)
-            .ToListAsync();
+        var query = db.Subscriptions.Where(s => s.IsActive);
+        if (userId != null)
+            query = query.Where(s => s.UserId == userId);
+
+        var subscriptions = await query.ToListAsync();
 
         var totalNewDownloads = 0;
 

@@ -13,6 +13,7 @@ public class Video
     public string? YoutubeUrl { get; set; }
     public DateTime? PublishedAt { get; set; }
     public string? ChannelId { get; set; }
+    public string? UserId { get; set; }
 }
 
 public class Download
@@ -42,6 +43,8 @@ public class Download
     public long? AvgSpeedBytes { get; set; }
     public string? Quality { get; set; }
     public int? ConcurrentFragments { get; set; }
+
+    public string? UserId { get; set; }
 }
 
 public enum DownloadStatus
@@ -69,4 +72,24 @@ public class Subscription
     public DateTime? LastCheckedAt { get; set; }
     public DateTime LastVideoDate { get; set; }
     public int TotalDownloaded { get; set; }
+    public string? UserId { get; set; }
+}
+
+public class User
+{
+    public string Id { get; set; } = null!;
+    public string Username { get; set; } = null!;
+    public string PasswordHash { get; set; } = null!;
+    public string DisplayName { get; set; } = null!;
+    public string Role { get; set; } = null!;
+    public DateTime CreatedAt { get; set; }
+    public long? StorageQuotaBytes { get; set; }
+    public string? JwtSecret { get; set; }
+}
+
+public class UserSetting
+{
+    public string Key { get; set; } = null!;
+    public string UserId { get; set; } = null!;
+    public string Value { get; set; } = null!;
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SuperTube.Api.Data;
+using SuperTube.Api.Services;
 
 namespace SuperTube.Api.Endpoints;
 
@@ -7,12 +8,13 @@ public static class SettingsEndpoints
 {
     public static void MapSettingsEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/settings");
+        var group = app.MapGroup("/api/settings").RequireAuthorization();
 
-        // GET /api/settings - Get all settings
-        group.MapGet("/", async (AppDbContext db) =>
+        // GET /api/settings - Get all settings (user overrides with global fallback)
+        group.MapGet("/", async (AppDbContext db, HttpContext httpContext) =>
         {
-            var settings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value);
+            var userId = httpContext.GetUserId()!;
+            var settings = await GetMergedSettings(db, userId);
 
             var structured = new
             {
@@ -50,9 +52,10 @@ public static class SettingsEndpoints
             return Results.Ok(new { data = structured });
         });
 
-        // PUT /api/settings - Update settings
-        group.MapPut("/", async (SettingsUpdateRequest request, AppDbContext db) =>
+        // PUT /api/settings - Update settings (writes to UserSettings)
+        group.MapPut("/", async (SettingsUpdateRequest request, AppDbContext db, HttpContext httpContext) =>
         {
+            var userId = httpContext.GetUserId()!;
             var updates = new Dictionary<string, string>();
 
             if (request.Quality?.Default is not null)
@@ -90,14 +93,14 @@ public static class SettingsEndpoints
 
             foreach (var (key, value) in updates)
             {
-                var setting = await db.Settings.FindAsync(key);
-                if (setting is not null)
+                var userSetting = await db.UserSettings.FindAsync(key, userId);
+                if (userSetting is not null)
                 {
-                    setting.Value = value;
+                    userSetting.Value = value;
                 }
                 else
                 {
-                    db.Settings.Add(new Setting { Key = key, Value = value });
+                    db.UserSettings.Add(new UserSetting { Key = key, UserId = userId, Value = value });
                 }
             }
 
@@ -105,6 +108,24 @@ public static class SettingsEndpoints
 
             return Results.Ok(new { data = new { updated = updates.Count } });
         });
+    }
+
+    public static async Task<Dictionary<string, string>> GetMergedSettings(AppDbContext db, string userId)
+    {
+        // Start with global defaults
+        var globalSettings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value);
+
+        // Override with user settings
+        var userSettings = await db.UserSettings
+            .Where(us => us.UserId == userId)
+            .ToDictionaryAsync(us => us.Key, us => us.Value);
+
+        foreach (var (key, value) in userSettings)
+        {
+            globalSettings[key] = value;
+        }
+
+        return globalSettings;
     }
 }
 

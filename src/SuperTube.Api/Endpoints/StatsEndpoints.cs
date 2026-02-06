@@ -1,5 +1,8 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using SuperTube.Api.Data;
+using SuperTube.Api.Services;
 
 namespace SuperTube.Api.Endpoints;
 
@@ -7,13 +10,14 @@ public static class StatsEndpoints
 {
     public static void MapStatsEndpoints(this WebApplication app)
     {
-        // GET /api/stats - Global stats
-        app.MapGet("/api/stats", async (AppDbContext db) =>
+        // GET /api/stats - Global stats (filtered by user)
+        app.MapGet("/api/stats", async (AppDbContext db, HttpContext httpContext) =>
         {
-            var totalVideos = await db.Videos.CountAsync();
-            var totalSize = await db.Videos.SumAsync(v => v.Filesize ?? 0);
-            var totalDuration = await db.Videos.SumAsync(v => v.Duration ?? 0);
-            var channelCount = await db.Videos.Select(v => v.Uploader).Distinct().CountAsync();
+            var userId = httpContext.GetUserId();
+            var totalVideos = await db.Videos.CountAsync(v => v.UserId == userId);
+            var totalSize = await db.Videos.Where(v => v.UserId == userId).SumAsync(v => v.Filesize ?? 0);
+            var totalDuration = await db.Videos.Where(v => v.UserId == userId).SumAsync(v => v.Duration ?? 0);
+            var channelCount = await db.Videos.Where(v => v.UserId == userId).Select(v => v.Uploader).Distinct().CountAsync();
 
             return Results.Ok(new
             {
@@ -27,13 +31,14 @@ public static class StatsEndpoints
                     formattedDuration = FormatDuration(totalDuration)
                 }
             });
-        });
+        }).RequireAuthorization();
 
-        // GET /api/stats/downloads - Download metrics
-        app.MapGet("/api/stats/downloads", async (AppDbContext db) =>
+        // GET /api/stats/downloads - Download metrics (filtered by user)
+        app.MapGet("/api/stats/downloads", async (AppDbContext db, HttpContext httpContext) =>
         {
+            var userId = httpContext.GetUserId();
             var recentDownloads = await db.Downloads
-                .Where(d => d.CompletedAt != null && d.CompletedAt > DateTime.UtcNow.AddDays(-30))
+                .Where(d => d.UserId == userId && d.CompletedAt != null && d.CompletedAt > DateTime.UtcNow.AddDays(-30))
                 .ToListAsync();
 
             var completed = recentDownloads.Where(d => d.Status == DownloadStatus.Completed).ToList();
@@ -66,11 +71,11 @@ public static class StatsEndpoints
                         formattedSpeed = FormatBytes((long)avgSpeed) + "/s",
                         durationSeconds = (int)avgDuration
                     },
-                    pending = await db.Downloads.CountAsync(d => d.Status == DownloadStatus.Pending),
-                    inProgress = await db.Downloads.CountAsync(d => d.Status == DownloadStatus.Downloading)
+                    pending = await db.Downloads.CountAsync(d => d.UserId == userId && d.Status == DownloadStatus.Pending),
+                    inProgress = await db.Downloads.CountAsync(d => d.UserId == userId && d.Status == DownloadStatus.Downloading)
                 }
             });
-        });
+        }).RequireAuthorization();
 
         // GET /api/webhook - Webhook configuration
         app.MapGet("/api/webhook", async (AppDbContext db) =>
@@ -93,7 +98,7 @@ public static class StatsEndpoints
                     port = webhookPort
                 }
             });
-        });
+        }).RequireAuthorization();
 
         // PUT /api/webhook - Update webhook settings
         app.MapPut("/api/webhook", async (WebhookUpdateRequest request, AppDbContext db) =>
@@ -139,13 +144,12 @@ public static class StatsEndpoints
                     port = webhookPort
                 }
             });
-        });
+        }).RequireAuthorization();
 
-        // POST /api/webhook/verify - Verify webhook token (called by webhook container)
+        // POST /api/webhook/verify - Verify webhook token as JWT (called by webhook container, no auth)
         app.MapPost("/api/webhook/verify", async (TokenVerifyRequest request, AppDbContext db) =>
         {
             var tokenEnabled = await db.Settings.FindAsync("webhook.tokenEnabled");
-            var tokenValue = await db.Settings.FindAsync("webhook.token");
 
             // If token not required, always valid
             if (tokenEnabled?.Value != "true")
@@ -153,9 +157,32 @@ public static class StatsEndpoints
                 return Results.Ok(new { valid = true });
             }
 
-            var isValid = !string.IsNullOrEmpty(request.Token) && request.Token == tokenValue?.Value;
-            return Results.Ok(new { valid = isValid });
-        });
+            if (string.IsNullOrEmpty(request.Token))
+                return Results.Ok(new { valid = false });
+
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                if (!handler.CanReadToken(request.Token))
+                    return Results.Ok(new { valid = false });
+
+                var jwt = handler.ReadJwtToken(request.Token);
+                var userId = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "nameid")?.Value;
+                if (userId is null)
+                    return Results.Ok(new { valid = false });
+
+                var user = await db.Users.FindAsync(userId);
+                if (user?.JwtSecret is null)
+                    return Results.Ok(new { valid = false });
+
+                var isValid = AuthService.ValidateTokenSignature(request.Token, user.JwtSecret);
+                return Results.Ok(new { valid = isValid });
+            }
+            catch
+            {
+                return Results.Ok(new { valid = false });
+            }
+        }).AllowAnonymous();
 
         // POST /api/webhook/regenerate - Generate a new token
         app.MapPost("/api/webhook/regenerate", async (AppDbContext db) =>
@@ -175,7 +202,7 @@ public static class StatsEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(new { data = new { token = newToken } });
-        });
+        }).RequireAuthorization();
 
         // PUT /api/webhook/token - Set token manually
         app.MapPut("/api/webhook/token", async (SetTokenRequest request, AppDbContext db) =>
@@ -199,39 +226,41 @@ public static class StatsEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(new { data = new { token = request.Token } });
-        });
+        }).RequireAuthorization();
 
         // GET /api/ntfy - Ntfy configuration
-        app.MapGet("/api/ntfy", async (AppDbContext db) =>
+        app.MapGet("/api/ntfy", async (AppDbContext db, HttpContext httpContext) =>
         {
-            var enabled = await db.Settings.FindAsync("ntfy.enabled");
-            var topic = await db.Settings.FindAsync("ntfy.topic");
+            var userId = httpContext.GetUserId()!;
+            var settings = await SettingsEndpoints.GetMergedSettings(db, userId);
 
             return Results.Ok(new
             {
                 data = new
                 {
-                    enabled = enabled?.Value == "true",
-                    topic = topic?.Value ?? ""
+                    enabled = settings.GetValueOrDefault("ntfy.enabled", "false") == "true",
+                    topic = settings.GetValueOrDefault("ntfy.topic", "")
                 }
             });
-        });
+        }).RequireAuthorization();
 
         // PUT /api/ntfy - Update ntfy settings
-        app.MapPut("/api/ntfy", async (NtfyUpdateRequest request, AppDbContext db) =>
+        app.MapPut("/api/ntfy", async (NtfyUpdateRequest request, AppDbContext db, HttpContext httpContext) =>
         {
-            var enabled = await db.Settings.FindAsync("ntfy.enabled");
-            var topic = await db.Settings.FindAsync("ntfy.topic");
+            var userId = httpContext.GetUserId()!;
 
-            if (enabled is not null)
-                enabled.Value = request.Enabled.ToString().ToLower();
-            else
-                db.Settings.Add(new Setting { Key = "ntfy.enabled", Value = request.Enabled.ToString().ToLower() });
+            var enabledSetting = await db.UserSettings.FindAsync("ntfy.enabled", userId);
+            var topicSetting = await db.UserSettings.FindAsync("ntfy.topic", userId);
 
-            if (topic is not null)
-                topic.Value = request.Topic ?? "";
+            if (enabledSetting is not null)
+                enabledSetting.Value = request.Enabled.ToString().ToLower();
             else
-                db.Settings.Add(new Setting { Key = "ntfy.topic", Value = request.Topic ?? "" });
+                db.UserSettings.Add(new UserSetting { Key = "ntfy.enabled", UserId = userId, Value = request.Enabled.ToString().ToLower() });
+
+            if (topicSetting is not null)
+                topicSetting.Value = request.Topic ?? "";
+            else
+                db.UserSettings.Add(new UserSetting { Key = "ntfy.topic", UserId = userId, Value = request.Topic ?? "" });
 
             await db.SaveChangesAsync();
 
@@ -243,15 +272,18 @@ public static class StatsEndpoints
                     topic = request.Topic ?? ""
                 }
             });
-        });
+        }).RequireAuthorization();
 
         // POST /api/ntfy/test - Send test notification
-        app.MapPost("/api/ntfy/test", async (AppDbContext db, HttpClient httpClient) =>
+        app.MapPost("/api/ntfy/test", async (AppDbContext db, HttpContext httpContext, HttpClient httpClient) =>
         {
-            var enabled = await db.Settings.FindAsync("ntfy.enabled");
-            var topic = await db.Settings.FindAsync("ntfy.topic");
+            var userId = httpContext.GetUserId()!;
+            var settings = await SettingsEndpoints.GetMergedSettings(db, userId);
 
-            if (enabled?.Value != "true" || string.IsNullOrEmpty(topic?.Value))
+            var enabled = settings.GetValueOrDefault("ntfy.enabled", "false") == "true";
+            var topic = settings.GetValueOrDefault("ntfy.topic", "");
+
+            if (!enabled || string.IsNullOrEmpty(topic))
             {
                 return Results.BadRequest(new { error = "Ntfy not configured" });
             }
@@ -259,7 +291,7 @@ public static class StatsEndpoints
             try
             {
                 var response = await httpClient.PostAsync(
-                    $"https://ntfy.sh/{topic.Value}",
+                    $"https://ntfy.sh/{topic}",
                     new StringContent("Test notification from SuperTube!")
                 );
 
@@ -272,9 +304,9 @@ public static class StatsEndpoints
             {
                 return Results.BadRequest(new { error = ex.Message });
             }
-        });
+        }).RequireAuthorization();
 
-        // GET /api/storage - Storage info
+        // GET /api/storage - Storage info (global, not filtered by user)
         app.MapGet("/api/storage", () =>
         {
             var youtubeDir = Environment.GetEnvironmentVariable("YOUTUBE_PATH") ?? "/youtube";
@@ -313,7 +345,7 @@ public static class StatsEndpoints
                     }
                 });
             }
-        });
+        }).RequireAuthorization();
     }
 
     private static string FormatBytes(long bytes)

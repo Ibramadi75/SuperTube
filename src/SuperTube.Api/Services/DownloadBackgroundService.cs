@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SuperTube.Api.Data;
+using SuperTube.Api.Endpoints;
 
 namespace SuperTube.Api.Services;
 
@@ -78,8 +79,16 @@ public class DownloadBackgroundService : BackgroundService
 
             _logger.LogInformation("Starting download {DownloadId} for {Url}", downloadId, download.Url);
 
-            // Get settings
-            var settings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value, cts.Token);
+            // Get settings (user-specific with global fallback)
+            Dictionary<string, string> settings;
+            if (!string.IsNullOrEmpty(download.UserId))
+            {
+                settings = await SettingsEndpoints.GetMergedSettings(db, download.UserId);
+            }
+            else
+            {
+                settings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value, cts.Token);
+            }
 
             // Build request
             var request = new YtdlpDownloadRequest
@@ -103,7 +112,7 @@ public class DownloadBackgroundService : BackgroundService
             await db.SaveChangesAsync(cts.Token);
 
             // Send start notification
-            await SendNotificationAsync(db, download.Url, status: "started");
+            await SendNotificationAsync(db, download.UserId, download.Url, status: "started");
 
             // Stream progress
             var startTime = DateTime.UtcNow;
@@ -150,18 +159,18 @@ public class DownloadBackgroundService : BackgroundService
                 // Create video entry
                 if (finalStatus.Result != null)
                 {
-                    var video = await CreateVideoEntryAsync(db, finalStatus.Result, videoInfo, download.Url, cts.Token);
+                    var video = await CreateVideoEntryAsync(db, finalStatus.Result, videoInfo, download.Url, download.UserId, cts.Token);
 
                     // Auto-subscribe if enabled
                     if (video != null && videoInfo != null)
                     {
-                        await TryAutoSubscribeAsync(db, video, videoInfo, cts.Token);
+                        await TryAutoSubscribeAsync(db, video, videoInfo, download.UserId, cts.Token);
                     }
                 }
 
                 // Send notification
                 var title = finalStatus.Result?.Title ?? download.Title ?? "Video";
-                await SendNotificationAsync(db, title, status: "success");
+                await SendNotificationAsync(db, download.UserId, title, status: "success");
             }
             else
             {
@@ -170,7 +179,7 @@ public class DownloadBackgroundService : BackgroundService
 
                 // Send failure notification
                 var title = download.Title ?? "Video";
-                await SendNotificationAsync(db, title, status: "failed");
+                await SendNotificationAsync(db, download.UserId, title, status: "failed");
             }
 
             await db.SaveChangesAsync(cts.Token);
@@ -211,7 +220,7 @@ public class DownloadBackgroundService : BackgroundService
         }
     }
 
-    private async Task<Video?> CreateVideoEntryAsync(AppDbContext db, YtdlpDownloadResult result, YtdlpVideoInfo? videoInfo, string youtubeUrl, CancellationToken ct)
+    private async Task<Video?> CreateVideoEntryAsync(AppDbContext db, YtdlpDownloadResult result, YtdlpVideoInfo? videoInfo, string youtubeUrl, string? userId, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(result.VideoId) || string.IsNullOrEmpty(result.Filepath))
             return null;
@@ -249,6 +258,7 @@ public class DownloadBackgroundService : BackgroundService
             YoutubeUrl = youtubeUrl,
             PublishedAt = publishedAt,
             ChannelId = videoInfo?.ChannelId,
+            UserId = userId,
         };
 
         db.Videos.Add(video);
@@ -258,18 +268,20 @@ public class DownloadBackgroundService : BackgroundService
         return video;
     }
 
-    private async Task TryAutoSubscribeAsync(AppDbContext db, Video video, YtdlpVideoInfo videoInfo, CancellationToken ct)
+    private async Task TryAutoSubscribeAsync(AppDbContext db, Video video, YtdlpVideoInfo videoInfo, string? userId, CancellationToken ct)
     {
         try
         {
-            // Check if auto-subscribe is enabled
-            var autoSubscribeSetting = await db.Settings.FindAsync("subscription.auto_subscribe");
-            if (autoSubscribeSetting?.Value != "true")
+            if (string.IsNullOrEmpty(userId))
                 return;
 
-            // Check if subscriptions feature is enabled
-            var enabledSetting = await db.Settings.FindAsync("subscription.enabled");
-            if (enabledSetting?.Value != "true")
+            // Check user-specific settings
+            var settings = await SettingsEndpoints.GetMergedSettings(db, userId);
+
+            if (settings.GetValueOrDefault("subscription.auto_subscribe", "true") != "true")
+                return;
+
+            if (settings.GetValueOrDefault("subscription.enabled", "true") != "true")
                 return;
 
             if (string.IsNullOrEmpty(videoInfo.ChannelId))
@@ -277,7 +289,7 @@ public class DownloadBackgroundService : BackgroundService
 
             using var scope = _scopeFactory.CreateScope();
             var subscriptionService = scope.ServiceProvider.GetRequiredService<ISubscriptionService>();
-            await subscriptionService.CreateFromVideoAsync(video, videoInfo, db);
+            await subscriptionService.CreateFromVideoAsync(video, videoInfo, db, userId);
         }
         catch (Exception ex)
         {
@@ -312,26 +324,40 @@ public class DownloadBackgroundService : BackgroundService
         }
     }
 
-    private async Task SendNotificationAsync(AppDbContext db, string message, string status = "success")
+    private async Task SendNotificationAsync(AppDbContext db, string? userId, string message, string status = "success")
     {
         try
         {
-            var enabled = await db.Settings.FindAsync("ntfy.enabled");
-            var topic = await db.Settings.FindAsync("ntfy.topic");
+            string enabledValue;
+            string topicValue;
 
-            if (enabled?.Value != "true" || string.IsNullOrEmpty(topic?.Value))
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var settings = await SettingsEndpoints.GetMergedSettings(db, userId);
+                enabledValue = settings.GetValueOrDefault("ntfy.enabled", "false");
+                topicValue = settings.GetValueOrDefault("ntfy.topic", "");
+            }
+            else
+            {
+                var enabled = await db.Settings.FindAsync("ntfy.enabled");
+                var topic = await db.Settings.FindAsync("ntfy.topic");
+                enabledValue = enabled?.Value ?? "false";
+                topicValue = topic?.Value ?? "";
+            }
+
+            if (enabledValue != "true" || string.IsNullOrEmpty(topicValue))
                 return;
 
             var (title, tag, body) = status switch
             {
-                "started" => ("Vidéo ajoutée", "arrow_down", "Téléchargement commencé"),
-                "success" => ("Terminé", "white_check_mark", message),
-                "failed" => ("Échec", "x", message),
+                "started" => ("Video ajoutee", "arrow_down", "Telechargement commence"),
+                "success" => ("Termine", "white_check_mark", message),
+                "failed" => ("Echec", "x", message),
                 _ => ("SuperTube", "bell", message)
             };
 
             var client = _httpClientFactory.CreateClient();
-            var request = new HttpRequestMessage(HttpMethod.Post, $"https://ntfy.sh/{topic.Value}");
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://ntfy.sh/{topicValue}");
             request.Headers.Add("Title", title);
             request.Headers.Add("Tags", tag);
             request.Content = new StringContent(body);

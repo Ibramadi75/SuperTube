@@ -14,6 +14,8 @@ services:
       - TZ=Europe/Paris
       - YTDLP_API_URL=http://ytdlp-api:3001
       - WEBHOOK_PORT=${WEBHOOK_PORT:-9001}
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123
     depends_on:
       - ytdlp-api
     restart: unless-stopped
