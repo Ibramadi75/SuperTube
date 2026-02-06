@@ -44,21 +44,22 @@ public class DownloadBackgroundService : BackgroundService
 
     private async Task ProcessPendingDownloadsAsync(CancellationToken stoppingToken)
     {
-        // Only one download at a time to avoid SQLite "database is locked" errors
-        if (_activeDownloads.Count > 0)
-            return;
-
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var nextDownload = await db.Downloads
+        // Get pending downloads
+        var pendingDownloads = await db.Downloads
             .Where(d => d.Status == DownloadStatus.Pending)
             .OrderBy(d => d.StartedAt)
-            .FirstOrDefaultAsync(stoppingToken);
+            .Take(3) // Max concurrent downloads
+            .ToListAsync(stoppingToken);
 
-        if (nextDownload != null && !_activeDownloads.ContainsKey(nextDownload.Id))
+        foreach (var download in pendingDownloads)
         {
-            _ = ProcessDownloadAsync(nextDownload.Id, stoppingToken);
+            if (_activeDownloads.ContainsKey(download.Id))
+                continue;
+
+            _ = ProcessDownloadAsync(download.Id, stoppingToken);
         }
     }
 
@@ -77,8 +78,10 @@ public class DownloadBackgroundService : BackgroundService
 
             _logger.LogInformation("Starting download {DownloadId} for {Url}", downloadId, download.Url);
 
+            // Get settings
             var settings = await db.Settings.ToDictionaryAsync(s => s.Key, s => s.Value, cts.Token);
 
+            // Build request
             var request = new YtdlpDownloadRequest
             {
                 Url = download.Url,
@@ -90,15 +93,19 @@ public class DownloadBackgroundService : BackgroundService
                 DownloadThumbnail = bool.Parse(settings.GetValueOrDefault("download_thumbnail", "true")),
             };
 
+            // Start download on ytdlp-api
             var response = await _ytdlpService.StartDownloadAsync(request);
             var ytdlpId = response.Id;
 
+            // Update status
             download.Status = DownloadStatus.Downloading;
             download.YtdlpId = ytdlpId;
             await db.SaveChangesAsync(cts.Token);
 
+            // Send start notification
             await SendNotificationAsync(db, download.Url, status: "started");
 
+            // Stream progress
             var startTime = DateTime.UtcNow;
 
             await foreach (var progress in _ytdlpService.StreamProgressAsync(ytdlpId, cts.Token))
@@ -109,6 +116,7 @@ public class DownloadBackgroundService : BackgroundService
                 download.FragmentIndex = progress.FragmentIndex;
                 download.FragmentCount = progress.FragmentCount;
 
+                // Calculate speed in bytes
                 if (progress.Speed != null)
                 {
                     download.AvgSpeedBytes = ParseSpeedToBytes(progress.Speed);
@@ -122,6 +130,7 @@ public class DownloadBackgroundService : BackgroundService
                 }
             }
 
+            // Get final status
             var finalStatus = await _ytdlpService.GetDownloadStatusAsync(ytdlpId);
             if (finalStatus == null)
             {
@@ -135,13 +144,22 @@ public class DownloadBackgroundService : BackgroundService
                 download.CompletedAt = DateTime.UtcNow;
                 download.DurationSeconds = (int)(DateTime.UtcNow - startTime).TotalSeconds;
 
+                // Get video info for duration and channel info
                 var videoInfo = await _ytdlpService.GetVideoInfoAsync(download.Url);
 
+                // Create video entry
                 if (finalStatus.Result != null)
                 {
-                    await CreateVideoEntryAsync(db, finalStatus.Result, videoInfo?.Duration, download.Url, cts.Token);
+                    var video = await CreateVideoEntryAsync(db, finalStatus.Result, videoInfo, download.Url, cts.Token);
+
+                    // Auto-subscribe if enabled
+                    if (video != null && videoInfo != null)
+                    {
+                        await TryAutoSubscribeAsync(db, video, videoInfo, cts.Token);
+                    }
                 }
 
+                // Send notification
                 var title = finalStatus.Result?.Title ?? download.Title ?? "Video";
                 await SendNotificationAsync(db, title, status: "success");
             }
@@ -150,6 +168,7 @@ public class DownloadBackgroundService : BackgroundService
                 download.Status = DownloadStatus.Failed;
                 download.Error = finalStatus.Error ?? "Download failed";
 
+                // Send failure notification
                 var title = download.Title ?? "Video";
                 await SendNotificationAsync(db, title, status: "failed");
             }
@@ -192,35 +211,78 @@ public class DownloadBackgroundService : BackgroundService
         }
     }
 
-    private async Task CreateVideoEntryAsync(AppDbContext db, YtdlpDownloadResult result, int? duration, string youtubeUrl, CancellationToken ct)
+    private async Task<Video?> CreateVideoEntryAsync(AppDbContext db, YtdlpDownloadResult result, YtdlpVideoInfo? videoInfo, string youtubeUrl, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(result.VideoId) || string.IsNullOrEmpty(result.Filepath))
-            return;
+            return null;
 
+        // Check if video already exists
         var existing = await db.Videos.FindAsync(result.VideoId);
-        if (existing != null) return;
+        if (existing != null) return existing;
 
         var filepath = result.Filepath;
         var fileInfo = new FileInfo(filepath);
+
+        // Build thumbnail path
         var thumbnailPath = filepath.Replace($".{result.Ext}", "-thumb.jpg");
+
+        // Parse upload date
+        DateTime? publishedAt = null;
+        if (!string.IsNullOrEmpty(videoInfo?.UploadDate) && videoInfo.UploadDate.Length == 8)
+        {
+            if (DateTime.TryParseExact(videoInfo.UploadDate, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out var parsed))
+            {
+                publishedAt = parsed;
+            }
+        }
 
         var video = new Video
         {
             Id = result.VideoId,
             Title = result.Title ?? "Unknown",
             Uploader = result.Uploader ?? "Unknown",
-            Duration = duration,
+            Duration = videoInfo?.Duration,
             Filepath = filepath,
             ThumbnailPath = File.Exists(thumbnailPath) ? thumbnailPath : null,
             Filesize = fileInfo.Exists ? fileInfo.Length : null,
             DownloadedAt = DateTime.UtcNow,
             YoutubeUrl = youtubeUrl,
+            PublishedAt = publishedAt,
+            ChannelId = videoInfo?.ChannelId,
         };
 
         db.Videos.Add(video);
         await db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Created video entry for {VideoId}: {Title} ({Duration}s)", video.Id, video.Title, duration);
+        _logger.LogInformation("Created video entry for {VideoId}: {Title} ({Duration}s)", video.Id, video.Title, videoInfo?.Duration);
+        return video;
+    }
+
+    private async Task TryAutoSubscribeAsync(AppDbContext db, Video video, YtdlpVideoInfo videoInfo, CancellationToken ct)
+    {
+        try
+        {
+            // Check if auto-subscribe is enabled
+            var autoSubscribeSetting = await db.Settings.FindAsync("subscription.auto_subscribe");
+            if (autoSubscribeSetting?.Value != "true")
+                return;
+
+            // Check if subscriptions feature is enabled
+            var enabledSetting = await db.Settings.FindAsync("subscription.enabled");
+            if (enabledSetting?.Value != "true")
+                return;
+
+            if (string.IsNullOrEmpty(videoInfo.ChannelId))
+                return;
+
+            using var scope = _scopeFactory.CreateScope();
+            var subscriptionService = scope.ServiceProvider.GetRequiredService<ISubscriptionService>();
+            await subscriptionService.CreateFromVideoAsync(video, videoInfo, db);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to auto-subscribe for video {VideoId}", video.Id);
+        }
     }
 
     private static long? ParseSpeedToBytes(string speed)
@@ -262,9 +324,9 @@ public class DownloadBackgroundService : BackgroundService
 
             var (title, tag, body) = status switch
             {
-                "started" => ("Video ajoutee", "arrow_down", "Telechargement commence"),
-                "success" => ("Termine", "white_check_mark", message),
-                "failed" => ("Echec", "x", message),
+                "started" => ("Vidéo ajoutée", "arrow_down", "Téléchargement commencé"),
+                "success" => ("Terminé", "white_check_mark", message),
+                "failed" => ("Échec", "x", message),
                 _ => ("SuperTube", "bell", message)
             };
 

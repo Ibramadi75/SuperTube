@@ -38,6 +38,12 @@ public static class SettingsEndpoints
                     enabled = settings.GetValueOrDefault("sponsorblock.enabled", "true") == "true",
                     action = settings.GetValueOrDefault("sponsorblock.action", "mark"),
                     categories = settings.GetValueOrDefault("sponsorblock.categories", "sponsor,intro,outro").Split(',')
+                },
+                subscriptions = new
+                {
+                    enabled = settings.GetValueOrDefault("subscription.enabled", "true") == "true",
+                    autoSubscribe = settings.GetValueOrDefault("subscription.auto_subscribe", "true") == "true",
+                    cron = settings.GetValueOrDefault("subscription.cron", "0 * 9-21 * * *")
                 }
             };
 
@@ -75,6 +81,13 @@ public static class SettingsEndpoints
             if (request.Sponsorblock?.Categories is not null)
                 updates["sponsorblock.categories"] = string.Join(",", request.Sponsorblock.Categories);
 
+            if (request.Subscriptions?.Enabled is not null)
+                updates["subscription.enabled"] = request.Subscriptions.Enabled.Value.ToString().ToLower();
+            if (request.Subscriptions?.AutoSubscribe is not null)
+                updates["subscription.auto_subscribe"] = request.Subscriptions.AutoSubscribe.Value.ToString().ToLower();
+            if (request.Subscriptions?.Cron is not null)
+                updates["subscription.cron"] = request.Subscriptions.Cron;
+
             foreach (var (key, value) in updates)
             {
                 var setting = await db.Settings.FindAsync(key);
@@ -99,10 +112,12 @@ public record SettingsUpdateRequest(
     QualitySettings? Quality,
     FormatSettings? Format,
     PerformanceSettings? Performance,
-    SponsorblockSettings? Sponsorblock
+    SponsorblockSettings? Sponsorblock,
+    SubscriptionsSettings? Subscriptions
 );
 
 public record QualitySettings(string? Default);
 public record FormatSettings(string? Video, string? Audio, bool? Thumbnail, bool? EmbedThumbnail);
 public record PerformanceSettings(int? ConcurrentFragments, int? RateLimit, int? Retries);
 public record SponsorblockSettings(bool? Enabled, string? Action, string[]? Categories);
+public record SubscriptionsSettings(bool? Enabled, bool? AutoSubscribe, string? Cron);

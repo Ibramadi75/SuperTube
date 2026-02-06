@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
-import { Dashboard, Library, Settings, NotFound } from './pages'
+import { Dashboard, Library, Settings, Subscriptions, NotFound } from './pages'
 import { Toasts } from './components'
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -51,6 +51,21 @@ function Layout({ children }: { children: React.ReactNode }) {
               <span className="hidden sm:inline">Bibliotheque</span>
             </NavLink>
             <NavLink
+              to="/subscriptions"
+              className={({ isActive }) =>
+                `px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                  isActive
+                    ? 'bg-[var(--bg-tertiary)] text-white'
+                    : 'text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-tertiary)]'
+                }`
+              }
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span className="hidden sm:inline">Abonnements</span>
+            </NavLink>
+            <NavLink
               to="/settings"
               className={({ isActive }) =>
                 `px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
@@ -87,6 +102,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/library" element={<Library />} />
           <Route path="/library/:channel" element={<Library />} />
+          <Route path="/subscriptions" element={<Subscriptions />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

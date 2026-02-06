@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useStore } from '../store'
 import { Button, Select, Toggle } from '../components'
-import { getWebhookConfig, updateWebhookConfig, regenerateWebhookToken, setWebhookToken, getNtfyConfig, updateNtfyConfig, testNtfyNotification } from '../api'
-import type { WebhookConfig, NtfyConfig } from '../types'
+import { getWebhookConfig, updateWebhookConfig, regenerateWebhookToken, setWebhookToken, getNtfyConfig, updateNtfyConfig, testNtfyNotification, api } from '../api'
+import type { WebhookConfig, NtfyConfig, SubscriptionsSettings } from '../types'
 
 export function Settings() {
   const {
@@ -29,6 +29,12 @@ export function Settings() {
   const [ntfyTopic, setNtfyTopic] = useState('')
   const [ntfyTestSent, setNtfyTestSent] = useState(false)
 
+  const [subscriptionSettings, setSubscriptionSettings] = useState({
+    enabled: true,
+    autoSubscribe: true,
+    cron: '0 * 9-21 * * *',
+  })
+
   const [localSettings, setLocalSettings] = useState({
     quality: '1080',
     format: 'mp4',
@@ -50,6 +56,13 @@ export function Settings() {
     getNtfyConfig().then((config) => {
       setNtfyConfig(config)
       setNtfyTopic(config.topic)
+    }).catch(() => {})
+
+    // Fetch subscription settings
+    api.get<{ data: { subscriptions: SubscriptionsSettings } }>('/api/settings').then((response) => {
+      if (response.data.subscriptions) {
+        setSubscriptionSettings(response.data.subscriptions)
+      }
     }).catch(() => {})
   }, [fetchSettings, fetchStorage])
 
@@ -269,6 +282,49 @@ export function Settings() {
           {localSettings.sponsorblock_action === 'mark'
             ? 'Les segments sponsorises seront visibles comme chapitres dans le lecteur.'
             : 'Les segments sponsorises seront coupes de la video finale.'}
+        </p>
+      </section>
+
+      {/* Subscriptions */}
+      <section className="bg-[var(--bg-secondary)] rounded-xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-white">Abonnements automatiques</h2>
+        <Toggle
+          label="Activer les abonnements"
+          description="Verifier automatiquement les nouvelles videos des chaines suivies"
+          checked={subscriptionSettings.enabled}
+          onChange={async (checked) => {
+            setSubscriptionSettings((prev) => ({ ...prev, enabled: checked }))
+            await api.put('/api/settings', { subscriptions: { enabled: checked } })
+          }}
+        />
+        <Toggle
+          label="Auto-abonnement"
+          description="S'abonner automatiquement aux chaines lors d'un telechargement"
+          checked={subscriptionSettings.autoSubscribe}
+          onChange={async (checked) => {
+            setSubscriptionSettings((prev) => ({ ...prev, autoSubscribe: checked }))
+            await api.put('/api/settings', { subscriptions: { autoSubscribe: checked } })
+          }}
+        />
+        {subscriptionSettings.enabled && (
+          <Select
+            label="Frequence de verification"
+            value={subscriptionSettings.cron}
+            onChange={async (e) => {
+              const value = e.target.value
+              setSubscriptionSettings((prev) => ({ ...prev, cron: value }))
+              await api.put('/api/settings', { subscriptions: { cron: value } })
+            }}
+            options={[
+              { value: '0 * 9-21 * * *', label: 'Toutes les heures (9h-21h)' },
+              { value: '0 */2 9-21 * * *', label: 'Toutes les 2 heures (9h-21h)' },
+              { value: '0 0 12 * * *', label: 'Une fois par jour (12h)' },
+              { value: '0 0 */6 * * *', label: 'Toutes les 6 heures' },
+            ]}
+          />
+        )}
+        <p className="text-sm text-[var(--text-secondary)]">
+          Les nouvelles videos des chaines suivies seront automatiquement telechargees.
         </p>
       </section>
 

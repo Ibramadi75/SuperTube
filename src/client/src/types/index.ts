@@ -9,6 +9,21 @@ export interface Video {
   filesize: number | null
   downloadedAt: string
   youtubeUrl: string | null
+  publishedAt: string | null
+  channelId: string | null
+}
+
+// Subscription
+export interface Subscription {
+  id: string
+  channelId: string
+  channelName: string
+  channelUrl: string
+  isActive: boolean
+  subscribedAt: string
+  lastCheckedAt: string | null
+  lastVideoDate: string
+  totalDownloaded: number
 }
 
 // Download
@@ -44,6 +59,12 @@ export interface Settings {
   sponsorblock: string
   sponsorblock_action: string
   download_thumbnail: string
+}
+
+export interface SubscriptionsSettings {
+  enabled: boolean
+  autoSubscribe: boolean
+  cron: string
 }
 
 // Stats

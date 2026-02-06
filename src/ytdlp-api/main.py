@@ -49,6 +49,11 @@ class InfoRequest(BaseModel):
     url: str
 
 
+class ChannelVideosRequest(BaseModel):
+    channel_url: str
+    since_date: Optional[str] = None  # Format YYYYMMDD
+
+
 def build_ytdlp_command(request: DownloadRequest, download_id: str) -> list[str]:
     """Build the yt-dlp command with all options."""
     cmd = [
@@ -336,6 +341,9 @@ async def get_info(request: InfoRequest):
             "thumbnail": info.get("thumbnail"),
             "description": info.get("description"),
             "upload_date": info.get("upload_date"),
+            "channel_id": info.get("channel_id"),
+            "channel_url": info.get("channel_url"),
+            "uploader_id": info.get("uploader_id"),
         }
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=408, detail="Request timed out")
@@ -356,3 +364,52 @@ async def update_ytdlp():
         return {"status": "updated", "version": version_result.stdout.strip()}
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=408, detail="Update timed out")
+
+
+@app.post("/channel-videos")
+async def get_channel_videos(request: ChannelVideosRequest):
+    """Get list of videos from a channel."""
+    channel_url = request.channel_url.rstrip("/")
+    if not channel_url.endswith("/videos"):
+        channel_url = f"{channel_url}/videos"
+
+    cmd = [
+        "yt-dlp",
+        "--dump-json",
+        "--no-download",
+        "--flat-playlist",
+        "--playlist-end", "50",
+        channel_url,
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if result.returncode != 0:
+            raise HTTPException(status_code=400, detail=f"Failed to get channel videos: {result.stderr}")
+
+        videos = []
+        for line in result.stdout.strip().split("\n"):
+            if not line:
+                continue
+            try:
+                info = json.loads(line)
+                upload_date = info.get("upload_date")
+
+                # Filter by since_date if provided
+                if request.since_date and upload_date:
+                    if upload_date <= request.since_date:
+                        continue
+
+                videos.append({
+                    "id": info.get("id"),
+                    "title": info.get("title"),
+                    "upload_date": upload_date,
+                    "duration": info.get("duration"),
+                    "url": f"https://www.youtube.com/watch?v={info.get('id')}",
+                })
+            except json.JSONDecodeError:
+                continue
+
+        return {"videos": videos, "count": len(videos)}
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=408, detail="Request timed out")

@@ -1,4 +1,5 @@
 export { Dashboard } from './Dashboard'
 export { Library } from './Library'
 export { Settings } from './Settings'
+export { Subscriptions } from './Subscriptions'
 export { NotFound } from './NotFound'

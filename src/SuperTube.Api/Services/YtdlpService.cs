@@ -10,6 +10,7 @@ public interface IYtdlpService
     Task<YtdlpDownloadStatus?> GetDownloadStatusAsync(string downloadId);
     Task CancelDownloadAsync(string downloadId);
     Task<YtdlpVideoInfo?> GetVideoInfoAsync(string url);
+    Task<List<YtdlpChannelVideo>> GetChannelVideosAsync(string channelUrl, string? sinceDate = null);
     IAsyncEnumerable<YtdlpProgressEvent> StreamProgressAsync(string downloadId, CancellationToken cancellationToken);
 }
 
@@ -70,6 +71,28 @@ public class YtdlpService : IYtdlpService
         {
             _logger.LogError(ex, "Failed to get video info for {Url}", url);
             return null;
+        }
+    }
+
+    public async Task<List<YtdlpChannelVideo>> GetChannelVideosAsync(string channelUrl, string? sinceDate = null)
+    {
+        try
+        {
+            var request = new { channel_url = channelUrl, since_date = sinceDate };
+            var response = await _httpClient.PostAsJsonAsync("/channel-videos", request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to get channel videos for {Url}: {StatusCode}", channelUrl, response.StatusCode);
+                return [];
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<YtdlpChannelVideosResponse>();
+            return result?.Videos ?? [];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get channel videos for {Url}", channelUrl);
+            return [];
         }
     }
 
@@ -264,4 +287,40 @@ public class YtdlpVideoInfo
 
     [JsonPropertyName("upload_date")]
     public string? UploadDate { get; set; }
+
+    [JsonPropertyName("channel_id")]
+    public string? ChannelId { get; set; }
+
+    [JsonPropertyName("channel_url")]
+    public string? ChannelUrl { get; set; }
+
+    [JsonPropertyName("uploader_id")]
+    public string? UploaderId { get; set; }
+}
+
+public class YtdlpChannelVideo
+{
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+
+    [JsonPropertyName("upload_date")]
+    public string? UploadDate { get; set; }
+
+    [JsonPropertyName("duration")]
+    public int? Duration { get; set; }
+
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+}
+
+public class YtdlpChannelVideosResponse
+{
+    [JsonPropertyName("videos")]
+    public List<YtdlpChannelVideo>? Videos { get; set; }
+
+    [JsonPropertyName("count")]
+    public int Count { get; set; }
 }

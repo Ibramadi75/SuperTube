@@ -31,6 +31,12 @@ builder.Services.AddHttpClient();
 builder.Services.AddSingleton<DownloadBackgroundService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<DownloadBackgroundService>());
 
+// Subscription service
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+
+// Background service for subscription checks
+builder.Services.AddHostedService<SubscriptionBackgroundService>();
+
 // CORS for development
 builder.Services.AddCors(options =>
 {
@@ -74,6 +80,49 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+
+    // Migration: Add new columns to Videos table (for existing databases)
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            ALTER TABLE Videos ADD COLUMN PublishedAt TEXT NULL;
+        ");
+    }
+    catch { /* Column already exists */ }
+
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            ALTER TABLE Videos ADD COLUMN ChannelId TEXT NULL;
+        ");
+    }
+    catch { /* Column already exists */ }
+
+    // Migration: Create Subscriptions table if not exists
+    db.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS Subscriptions (
+            Id TEXT NOT NULL PRIMARY KEY,
+            ChannelId TEXT NOT NULL,
+            ChannelName TEXT NOT NULL,
+            ChannelUrl TEXT NOT NULL,
+            IsActive INTEGER NOT NULL DEFAULT 1,
+            SubscribedAt TEXT NOT NULL,
+            LastCheckedAt TEXT NULL,
+            LastVideoDate TEXT NOT NULL,
+            TotalDownloaded INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS IX_Subscriptions_ChannelId ON Subscriptions(ChannelId);
+        CREATE INDEX IF NOT EXISTS IX_Subscriptions_IsActive ON Subscriptions(IsActive);
+    ");
+
+    // Migration: Create indexes on Videos table
+    try
+    {
+        db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Videos_PublishedAt ON Videos(PublishedAt DESC);");
+        db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Videos_ChannelId ON Videos(ChannelId);");
+    }
+    catch { /* Indexes might already exist */ }
+
     DbSeeder.Seed(db);
 }
 
@@ -86,5 +135,6 @@ app.MapChannelEndpoints();
 app.MapDownloadEndpoints();
 app.MapSettingsEndpoints();
 app.MapStatsEndpoints();
+app.MapSubscriptionEndpoints();
 
 app.Run();

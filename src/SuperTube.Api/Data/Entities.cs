@@ -11,6 +11,8 @@ public class Video
     public long? Filesize { get; set; }
     public DateTime DownloadedAt { get; set; }
     public string? YoutubeUrl { get; set; }
+    public DateTime? PublishedAt { get; set; }
+    public string? ChannelId { get; set; }
 }
 
 public class Download
@@ -54,4 +56,17 @@ public class Setting
 {
     public string Key { get; set; } = null!;
     public string Value { get; set; } = null!;
+}
+
+public class Subscription
+{
+    public string Id { get; set; } = null!;
+    public string ChannelId { get; set; } = null!;
+    public string ChannelName { get; set; } = null!;
+    public string ChannelUrl { get; set; } = null!;
+    public bool IsActive { get; set; } = true;
+    public DateTime SubscribedAt { get; set; }
+    public DateTime? LastCheckedAt { get; set; }
+    public DateTime LastVideoDate { get; set; }
+    public int TotalDownloaded { get; set; }
 }
