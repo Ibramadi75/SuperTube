@@ -64,6 +64,14 @@ public class SubscriptionService : ISubscriptionService
         await db.SaveChangesAsync();
 
         _logger.LogInformation("Created subscription for channel {ChannelName} ({ChannelId})", subscription.ChannelName, subscription.ChannelId);
+
+        // Immediately check for newer videos (between downloaded video and today)
+        var newVideos = await CheckSubscriptionAsync(subscription.Id, db);
+        if (newVideos > 0)
+        {
+            _logger.LogInformation("Queued {Count} newer videos from {ChannelName} after initial subscription", newVideos, subscription.ChannelName);
+        }
+
         return subscription;
     }
 
